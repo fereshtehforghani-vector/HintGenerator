@@ -1,0 +1,116 @@
+File_name (no spaces - separate using underscores),File_type (Image/Code/Other),Is there an error (Y/N),error1,Category
+Coding_always_true.cpp,Code,Y,Coding always true error,coding error
+Coding_reset_every_time.cpp,Code,Y,Coding reset every time error,coding error
+Inconsistance_delay.png,Image,Y,Inconsistance delay error,coding error
+Inconsistance_delay_solution.png,Image,N,,
+coding_always_true2.cpp,Code,Y,coding always true2 error,coding error
+coding_case_sensitive.cpp,Code,Y,coding case sensitive error,coding error
+coding_empty_loop.cpp,Code,Y,coding empty loop error,coding error
+coding_if_without_braces.cpp,Code,Y,coding if without braces error,coding error
+coding_infinite_loop_inSetup.cpp,Code,Y,coding infinite loop inSetup error,coding error
+coding_joining_string_with_int.cpp,Code,Y,coding joining string with int error,coding error
+coding_loop_with_wrong_increment.cpp,Code,Y,coding loop with wrong increment error,coding error
+coding_missing_braces.cpp,Code,Y,coding missing braces error,coding error
+coding_missing_return_statement.cpp,Code,Y,coding missing return statement error,coding error
+coding_nothing_in_setup.cpp,Code,Y,coding nothing in setup error,coding error
+coding_random_starting_value.cpp,Code,Y,coding random starting value error,coding error
+coding_random_starting_value2.cpp,Code,Y,coding random starting value2 error,coding error
+coding_random_starting_value3.cpp,Code,Y,coding random starting value3 error,coding error
+coding_same_name_variables.cpp,Code,Y,coding same name variables error,coding error
+coding_semicolon_afterIf.cpp,Code,Y,coding semicolon afterIf error,coding error
+coding_static_variable_confusion.cpp,Code,Y,coding static variable confusion error,coding error
+coding_using_variable_before_assignment.cpp,Code,Y,coding using variable before assignment error,coding error
+coding_using_wrong_baudrate.cpp,Code,Y,coding using wrong baudrate error,coding error
+coding_using_wrong_operator.cpp,Code,Y,coding using wrong operator error,coding error
+coding_variable_not_in_scope.cpp,Code,Y,coding variable not in scope error,coding error
+coding_variable_not_in_scope2.cpp,Code,Y,coding variable not in scope2 error,coding error
+coding_wrong_loop_condition.cpp,Code,Y,coding wrong loop condition error,coding error
+coding_wrong_operator.cpp,Code,Y,coding wrong operator error,coding error
+coding_wrong_operator2.cpp,Code,Y,coding wrong operator2 error,coding error
+coding_wrong_operator3.cpp,Code,Y,coding wrong operator3 error,coding error
+coding_wrong_port.cpp,Code,Y,coding wrong port error,coding error
+coding_wrong_serial_function.cpp,Code,Y,coding wrong serial function error,coding error
+notUsingArgumentInFunction.png,Image,Y,notUsingArgumentInFunction error,coding error
+notUsingArgumentInFunction_solution.png,Image,N,,
+serialprintuse.png,Image,Y,serialprintuse error,coding error
+serialprintuse_solution.png,Image,N,,
+usingwrongbaudrate.png,Image,Y,usingwrongbaudrate error,coding error
+usingwrongbaudrate_solution.png,Image,N,,
+wrongOperator.png,Image,Y,wrongOperator error,coding error
+wrongOperator_solution.png,Image,N,,
+wrongcondition.png,Image,Y,wrongcondition error,coding error
+wrongcondition_solution.png,Image,N,,
+wrongvariablenames.png,Image,Y,wrongvariablenames error,coding error
+wrongvariablenames_solution.png,Image,N,,
+CSbeginmissing.png,Image,Y,CSbeginmissing error,colorsensor error
+CSbeginmissing_Solution.png,Image,N,,
+Color_wrong_color_constant.cpp,Code,Y,Color wrong color constant error,colorsensor error
+NoDelayafterInitialisation.png,Image,Y,NoDelayafterInitialisation error,colorsensor error
+Solution_to_all_.png,Image,N,,
+color_no_variables.cpp,Code,Y,color no variables error,colorsensor error
+usingWrongVariable.png,Image,Y,usingWrongVariable error,colorsensor error
+MotorDegreeWithGyro.png,Image,Y,MotorDegreeWithGyro error,dcmotor error
+MotorDegreeWithGyro_solution.png,Image,N,,
+Motor_begin_missing.cpp,Code,Y,Motor begin missing error,dcmotor error
+Motor_begin_multiple.cpp,Code,Y,Motor begin multiple error,dcmotor error
+Motor_both_same_port.cpp,Code,Y,Motor both same port error,dcmotor error
+Motor_constantly_restarting.cpp,Code,Y,Motor constantly restarting error,dcmotor error
+Motor_huge_degree_values.cpp,Code,Y,Motor huge degree values error,dcmotor error
+Motor_move_Zero_time.cpp,Code,Y,Motor move Zero time error,dcmotor error
+Motor_negative_rotations.cpp,Code,Y,Motor negative rotations error,dcmotor error
+Motor_never_stop.cpp,Code,Y,Motor never stop error,dcmotor error
+Motor_no_delay_in_speed_change.cpp,Code,Y,Motor no delay in speed change error,dcmotor error
+Motor_parameters_swapped.cpp,Code,Y,Motor parameters swapped error,dcmotor error
+Motor_stop_after_run.cpp,Code,Y,Motor stop after run error,dcmotor error
+Motor_too_many_decimal_points.cpp,Code,Y,Motor too many decimal points error,dcmotor error
+Motor_uninitialized_speed.cpp,Code,Y,Motor uninitialized speed error,dcmotor error
+Motor_unreachable_code.cpp,Code,Y,Motor unreachable error,dcmotor error
+Motor_zero_speed.cpp,Code,Y,Motor zero speed error,dcmotor error
+Motors_wrong_delay.cpp,Code,Y,Motors wrong delay error,dcmotor error
+Wrongport.png,Image,Y,Wrongport error,dcmotor error
+inconsistantMotorValues.png,Image,Y,inconsistantMotorValues error,dcmotor error
+inconsistantMotorValues_solution.png,Image,N,,
+motor_Invalid_speed.cpp,Code,Y,motor Invalid speed error,dcmotor error
+motor_Invalid_steer.cpp,Code,Y,motor Invalid steer error,dcmotor error
+motor_Wrong_speed.cpp,Code,Y,motor Wrong speed error,dcmotor error
+motor_too_many_rotations.cpp,Code,Y,motor too many rotations error,dcmotor error
+motor_veryless_degrees.cpp,Code,Y,motor veryless degrees error,dcmotor error
+notUsingStop.png,Image,Y,notUsingStop error,dcmotor error
+notUsingStop_solution.png,Image,N,,
+wrongportMotor_solution.png,Image,N,,
+TOF_notCalling_readDistance.cpp,Code,Y,TOF notCalling readDistance error,distance sensor error
+TOF_reading_before_begin.cpp,Code,Y,TOF reading before begin error,distance sensor error
+TOF_reading_without_storing.cpp,Code,Y,TOF reading without storing error,distance sensor error
+TOF_tinyDistance.cpp,Code,Y,TOF tinyDistance error,distance sensor error
+sensorMultipleRead.png,Image,Y,sensorMultipleRead error,distance sensor error
+sensorMultipleRead_solution.png,Image,N,,
+GyroNotUpdate.png,Image,Y,GyroNotUpdate error,gyro error
+GyroNotUpdate_Solution.png,Image,N,,
+Gyro_read_without_begin.cpp,Code,Y,Gyro read without begin error,gyro error
+gyroWrongPort.png,Image,Y,gyroWrongPort error,gyro error
+gyroWrongPort_solution.png,Image,N,,
+gyro_compare_without_tolerance.cpp,Code,Y,gyro compare without tolerance error,gyro error
+gyro_missing_resetYaw.cpp,Code,Y,gyro missing resetYaw error,gyro error
+gyro_reset_yaw_in_loop.cpp,Code,Y,gyro reset yaw in loop error,gyro error
+Not_Including_library.png,Image,Y,Not Including library error,library error
+Not_Including_library_solution.png,Image,N,,
+WrongSpellingofLibrary.png,Image,Y,WrongSpellingofLibrary error,library error
+multipleDeviceOnPort.png,Image,Y,multipleDeviceOnPort error,library error
+multipleDeviceOnPort_solution.png,Image,N,,
+SameLineWriting.png,Image,Y,SameLineWriting error,screen error
+clearAtWrongPlace.png,Image,Y,clearAtWrongPlace error,screen error
+clearAtWrongPlace_solution.png,Image,N,,
+screen_overlapping.cpp,Code,Y,screen overlapping error,screen error
+screen_using_long_text.cpp,Code,Y,screen using long text error,screen error
+screen_writing_without_clearing.cpp,Code,Y,screen writing without clearing error,screen error
+screen_wrong_line.cpp,Code,Y,screen wrong line error,screen error
+wrongportscreen.png,Image,Y,wrongportscreen error,screen error
+wrongportscreen_solution.png,Image,N,,
+WrongServoAngleValue.png,Image,Y,WrongServoAngleValue error,servo error
+WrongServoAngleValue_solution.png,Image,N,,
+NotUsingForLoop.png,Image,Y,NotUsingForLoop error,huskylens error
+NotUsingForLoop_solution.png,Image,N,,
+usingUnnecessaryDelay.png,Image,Y,usingUnnecessaryDelay error,huskylens error
+usingUnnecessaryDelay2.png,Image,Y,usingUnnecessaryDelay2 error,huskylens error
+usingWrongPins.png,Image,Y,usingWrongPins error,huskylens error
+usingWrongPins_solution.png,Image,N,,

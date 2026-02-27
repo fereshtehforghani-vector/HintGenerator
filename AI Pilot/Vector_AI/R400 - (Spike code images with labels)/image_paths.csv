@@ -1,0 +1,85 @@
+image_name,Is there an error (Y/N),category,error
+Correct Examples/Correct Code.png,Y,,
+Correct Examples/Correct Code 3.png,Y,,
+Correct Examples/Correct Code 4.png,Y,,
+Correct Examples/Correct Code 2.png,Y,,
+Correct Examples/Correct_Example_with_Loops.png,Y,,
+Movement logic errors/Movement Logic Error (1).png,N,Movement logic errors,Movement Logic Error
+Movement logic errors/Movement Logic Error.png,N,Movement logic errors,Movement Logic Error
+Movement logic errors/Inaccurate use of distance sensor.png,N,Movement logic errors,Inaccurate use of distance sensor
+Movement logic errors/Incorrect steering for Left turn 90 deg. (1).png,N,Movement logic errors,Incorrect steering for Left turn 90 deg.
+Movement logic errors/Incorrect steering for Left turn 90 deg..png,N,Movement logic errors,Incorrect steering for Left turn 90 deg.
+Movement logic errors/Incorrect Rotations for the First Turn (1).png,N,Movement logic errors,Incorrect Rotations for the First Turn
+Movement logic errors/Incorrect Rotations for the First Turn.png,N,Movement logic errors,Incorrect Rotations for the First Turn
+Movement logic errors/Movement Logic Error (2).png,N,Movement logic errors,Movement Logic Error
+Movement logic errors/No wall square.png,N,Movement logic errors,No wall square
+Movement logic errors/Movement is too fast.png,N,Movement logic errors,Movement is too fast
+Movement logic errors/Turns set to degrees not rotations.png,N,Movement logic errors,Turns set to degrees not rotations
+Movement logic errors/Turn set to rotations not degrees.png,N,Movement logic errors,Turn set to rotations not degrees
+Movement logic errors/Pickup movement is backwards.png,N,Movement logic errors,Pickup movement is backwards
+Movement logic errors/Incorrect Value for Turning 90 Degrees at Steering Value.png,N,Movement logic errors,Incorrect Value for Turning 90 Degrees at Steering Value
+Movement logic errors/Incorrect Value for Turning 90 Degrees at Speed and Steering Value.png,N,Movement logic errors,Incorrect Value for Turning 90 Degrees at Speed and Steering Value
+Movement logic errors/Wrong steering value.png,N,Movement logic errors,Wrong steering value
+Movement logic errors/stop moving set in the middle.png,N,Movement logic errors,stop moving set in the middle
+Movement logic errors/Missing Wait Block after Touch Sensor Activation.png,N,Movement logic errors,Missing Wait Block after Touch Sensor Activation
+Movement logic errors/no limit on steering.png,N,Movement logic errors,no limit on steering
+Movement logic errors/no limit on forwards movement.png,N,Movement logic errors,no limit on forwards movement
+Movement logic errors/Incorrect Speed for Turn to Hold On To Items.png,N,Movement logic errors,Incorrect Speed for Turn to Hold On To Items
+Movement logic errors/Movement Motors Not Declared.png,N,Movement logic errors,Movement Motors Not Declared
+Movement logic errors/Missing values.png,N,Movement logic errors,Missing values
+Movement logic errors/Code is randomly placed around.png,N,Movement logic errors,Code is randomly placed around
+Movement logic errors/Code is set to CM instead of IN.png,N,Movement logic errors,Code is set to CM instead of IN
+Movement logic errors/Turns are set to right instead of left.png,N,Movement logic errors,Turns are set to right instead of left
+Movement logic errors/After Press no wait.png,N,Movement logic errors,After Press no wait
+Movement logic errors/Incorrect_Rotations_for_Right_Turn_Accidental_Decimal_Point.png,N,Movement logic errors,Incorrect_Rotations_for_Right_Turn_Accidental_Decimal_Point
+Movement logic errors/Incorrect_Turn_using_single_motor_to_turn.png,N,Movement logic errors,Incorrect_Turn_using_single_motor_to_turn
+Movement logic errors/Incorrect_Turn_probably_meant_180_deg.png,N,Movement logic errors,Incorrect_Turn_probably_meant_180_deg
+Wrong Ports/Wrong Movement Ports.png,N,Wrong Ports,Wrong Movement Ports
+Wrong Ports/Wrong Movement Ports (1).png,N,Wrong Ports,Wrong Movement Ports
+Wrong Ports/Wrong sensor ports or sensor ports flipped (1).png,N,Wrong Ports,Wrong sensor ports or sensor ports flipped
+Wrong Ports/Wrong sensor ports or sensor ports flipped.png,N,Wrong Ports,Wrong sensor ports or sensor ports flipped
+Wrong Ports/Wrong Movement Ports (2).png,N,Wrong Ports,Wrong Movement Ports
+Wrong Ports/Wrong Movement Ports (3).png,N,Wrong Ports,Wrong Movement Ports
+Wrong Ports/Wrong sensor ports (2).png,N,Wrong Ports,Wrong sensor ports
+Wrong Ports/Wrong sensor ports (3).png,N,Wrong Ports,Wrong sensor ports
+Wrong Ports/Sensors set to wrong port.png,N,Wrong Ports,Sensors set to wrong port
+Wrong Ports/Movement Motor Set to Incorrect Ports.png,N,Wrong Ports,Movement Motor Set to Incorrect Ports
+Wrong Ports/Incorrect Port for Touch Sensor.png,N,Wrong Ports,Incorrect Port for Touch Sensor
+Wrong Ports/Incorrect Port for Ultrasonic Sensor.png,N,Wrong Ports,Incorrect Port for Ultrasonic Sensor
+Wrong Ports/Incorrect Port for Ultrasonic Sensor (2).png,N,Wrong Ports,Incorrect Port for Ultrasonic Sensor
+Wrong Ports/Ports_Not_Defined.png,N,Wrong Ports,Ports_Not_Defined
+Wrong Ports/Left_and_Right_motor_ports_are_flipped.png,N,Wrong Ports,Left_and_Right_motor_ports_are_flipped
+Wrong Ports/Force_Sensor_either_broken_or_not_connected.png,N,Wrong Ports,Force_Sensor_either_broken_or_not_connected
+Wrong Ports/Ultrasonic_Sensor_either_broken_or_not_connected.png,N,Wrong Ports,Ultrasonic_Sensor_either_broken_or_not_connected
+Unnecessary logic/Using exact values for sensors..png,N,Unnecessary logic,Using exact values for sensors.
+Unnecessary logic/Incorrect use of myBlock.png,N,Unnecessary logic,Incorrect use of myBlock
+Unnecessary logic/Incorrect use of myBlock(1).png,N,Unnecessary logic,Incorrect use of myBlock
+Unnecessary logic/Unnecessarily long delay.png,N,Unnecessary logic,Unnecessarily long delay
+Unnecessary logic/wait 0 sec has no purpose.png,N,Unnecessary logic,wait 0 sec has no purpose
+Unnecessary logic/Two_Start_blocks_only_left_code_runs.png,N,Unnecessary logic,Two_Start_blocks_only_left_code_runs
+Unnecessary logic/Do_not_need_a_stop_moving_block.png,N,Unnecessary logic,Do_not_need_a_stop_moving_block
+Unnecessary logic/Do_not_need_to_change_speed_of_a_singleMotor_from_the_motor_pair.png,N,Unnecessary logic,Do_not_need_to_change_speed_of_a_singleMotor_from_the_motor_pair
+Unnecessary logic/No_need_to_hard_press_the_force_sensor_to_trigger_movement.png,N,Unnecessary logic,No_need_to_hard_press_the_force_sensor_to_trigger_movement
+Sensors Logic Errors/Ultrasonic Sensor Logic Error (1).png,N,Sensors Logic Errors,Ultrasonic Sensor Logic Error
+Sensors Logic Errors/Ultrasonic Sensor Logic Error.png,N,Sensors Logic Errors,Ultrasonic Sensor Logic Error
+Sensors Logic Errors/Inaccurate use of distance sensor.png,N,Sensors Logic Errors,Inaccurate use of distance sensor
+Sensors Logic Errors/Using exact values for sensors..png,N,Sensors Logic Errors,Using exact values for sensors.
+Sensors Logic Errors/Ultrasonic Sensor does not sense accurately below 4-5 cm. (1).png,N,Sensors Logic Errors,Ultrasonic Sensor does not sense accurately below 4-5 cm.
+Sensors Logic Errors/Ultrasonic Sensor does not sense accurately below 4-5 cm..png,N,Sensors Logic Errors,Ultrasonic Sensor does not sense accurately below 4-5 cm.
+Sensors Logic Errors/Ultrasonic Sensor Logic Error (2).png,N,Sensors Logic Errors,Ultrasonic Sensor Logic Error
+Sensors Logic Errors/Ultrasonic Sensor Logic Error (3).png,N,Sensors Logic Errors,Ultrasonic Sensor Logic Error
+Sensors Logic Errors/Ultrasonic Sensor does not sense accurately below 4-5 cm. (2).png,N,Sensors Logic Errors,Ultrasonic Sensor does not sense accurately below 4-5 cm.
+Sensors Logic Errors/Ultrasonic Sensor does not sense accurately after 200 cm. .png,N,Sensors Logic Errors,Ultrasonic Sensor does not sense accurately after 200 cm.
+Sensors Logic Errors/Ultrasonic Sensor does not sense accurately after 200 cm. (2).png,N,Sensors Logic Errors,Ultrasonic Sensor does not sense accurately after 200 cm.
+Sensors Logic Errors/Closer than on ultrasonic.png,N,Sensors Logic Errors,Closer than on ultrasonic
+Sensors Logic Errors/Incorrect Use for Ultrasonic Sensor.png,N,Sensors Logic Errors,Incorrect Use for Ultrasonic Sensor
+Sensors Logic Errors/Incorrect Use of Ultrasonic Sensor When Moving Away from Wall.png,N,Sensors Logic Errors,Incorrect Use of Ultrasonic Sensor When Moving Away from Wall
+Sensors Logic Errors/Incorrect Use of Ultrasonic Sensor When Moving Away from Wall (2).png,N,Sensors Logic Errors,Incorrect Use of Ultrasonic Sensor When Moving Away from Wall
+Sensors Logic Errors/Incorrect Use of Ultrasonic Sensor When Moving Away from Wall (3).png,N,Sensors Logic Errors,Incorrect Use of Ultrasonic Sensor When Moving Away from Wall
+Sensors Logic Errors/Incorrect Use of Ultrasonic Sensor When Closer to a  Wall.png,N,Sensors Logic Errors,Incorrect Use of Ultrasonic Sensor When Closer to a  Wall
+Sensors Logic Errors/Incorrect Use of Ultrasonic Sensor When Closer to a  Wall (2).png,N,Sensors Logic Errors,Incorrect Use of Ultrasonic Sensor When Closer to a  Wall
+Sensors Logic Errors/Incorrect Unit for Use of Ultrasonic Sensor.png,N,Sensors Logic Errors,Incorrect Unit for Use of Ultrasonic Sensor
+Sensors Logic Errors/Doesn_t stop moving after Ultrasonic goes off.png,N,Sensors Logic Errors,Doesn_t stop moving after Ultrasonic goes off
+Sensors Logic Errors/Using_Exact_Values_for_Ultrasonic_Sensor_with_Full_Speed_Robot_does_not_stop.png,N,Sensors Logic Errors,Using_Exact_Values_for_Ultrasonic_Sensor_with_Full_Speed_Robot_does_not_stop
+Sensors Logic Errors/Ultrasonic_Sensor_condition_always_true_robot_does_not_move..png,N,Sensors Logic Errors,Ultrasonic_Sensor_condition_always_true_robot_does_not_move.
+Sensors Logic Errors/When_program_first_starts_the_force_sensor_is_most_likely_released.png,N,Sensors Logic Errors,When_program_first_starts_the_force_sensor_is_most_likely_released
