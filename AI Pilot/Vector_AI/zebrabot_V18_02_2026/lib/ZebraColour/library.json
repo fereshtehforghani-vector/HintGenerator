@@ -1,0 +1,20 @@
+{
+  "name": "ZebraColour",
+  "version": "1.0.0",
+  "description": "Precompiled colour detection library using TCS34725 with I2C multiplexer",
+  "keywords": ["colour", "sensor", "tcs34725", "i2c"],
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "build": {
+    "precompiled": true
+  },
+  "dependencies": [
+    {
+      "name": "Adafruit TCS34725",
+      "version": "^1.4.0"
+    },
+    {
+      "name": "Wire"
+    }
+  ]
+}

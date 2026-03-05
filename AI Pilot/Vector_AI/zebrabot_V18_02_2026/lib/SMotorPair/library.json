@@ -1,0 +1,22 @@
+{
+  "name": "SMotorPair",
+  "version": "1.0.0",
+  "description": "Dual motor control library built on top of SMotor2 for differential drive robots.",
+  "keywords": ["motor", "esp32", "robot", "pair"],
+  "authors": [
+    {
+      "name": "Vikram"
+    }
+  ],
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "dependencies": {
+    "SMotor2": "^1.0.0"
+  },
+  "build": {
+    "srcDir": "src",
+    "includeDir": "include",
+     "precompiled": true
+  }
+}
+    

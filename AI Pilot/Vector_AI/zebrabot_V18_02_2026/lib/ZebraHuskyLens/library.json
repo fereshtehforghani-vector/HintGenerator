@@ -1,0 +1,37 @@
+{
+  "name": "ZebraHuskyLens",
+  "version": "1.0.0",
+  "description": "Simplified Arduino library for HuskyLens AI camera with easy-to-use object detection and tracking functions",
+  "keywords": ["huskylens", "ai", "vision", "camera", "object-detection", "tracking", "sensor"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ZebraHuskyLens.git"
+  },
+  "authors": [
+    {
+      "name": "Your Name",
+      "email": "your.email@example.com",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/ZebraHuskyLens",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32", "espressif8266"],
+  "dependencies": [
+    {
+      "name": "HUSKYLENS",
+      "version": "^0.1.0"
+    }
+  ],
+  "export": {
+    "include": [
+      "src/*",
+      "examples/*",
+      "keywords.txt",
+      "library.properties",
+      "LICENSE",
+      "README.md"
+    ]
+  }
+}

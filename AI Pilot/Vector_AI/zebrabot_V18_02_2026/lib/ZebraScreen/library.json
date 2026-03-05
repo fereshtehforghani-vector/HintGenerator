@@ -1,0 +1,20 @@
+{
+  "name": "ZebraScreen",
+  "version": "1.0.0",
+  "description": "Precompiled library to control an SH1106 OLED display via I2C multiplexer",
+  "keywords": ["zebra", "screen", "oled", "sh1106", "i2c"],
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "build": {
+    "precompiled": true
+  },
+  "dependencies": [
+    {
+      "name": "GyverOLED",
+      "version": "*"
+    },
+    {
+      "name": "Wire"
+    }
+  ]
+}
