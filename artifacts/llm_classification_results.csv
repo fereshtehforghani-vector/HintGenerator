@@ -1,0 +1,36 @@
+filename,true_label,openai_no_rag,openai_with_rag
+WrongSpellingofLibrary.cpp,no error,no error,no error
+coding_missing_return_statement.cpp,coding error,coding error,coding error
+usingwrongbaudrate.cpp,no error,no error,no error
+NotUsingForLoop_solution.cpp,no error,no error,no error
+color_no_variables.cpp,colorsensor error,no error,colorsensor error
+usingwrongbaudrate_solution.cpp,no error,no error,no error
+sensorMultipleRead_solution.cpp,no error,no error,no error
+coding_infinite_loop_inSetup.cpp,coding error,coding error,coding error
+Solution to all .cpp,no error,no error,no error
+screen_overlapping.cpp,screen error,screen error,screen error
+coding_random_starting_value3.cpp,coding error,coding error,coding error
+coding_wrong_operator3.cpp,coding error,coding error,coding error
+coding_wrong_serial_function.cpp,coding error,coding error,coding error
+Motor_too_many_decimal_points.cpp,dcmotor error,dcmotor error,no error
+wrongvariablenames_solution.cpp,no error,dcmotor error,no error
+Not_Including_library_solution.cpp,no error,no error,no error
+serialprintuse_solution.cpp,no error,no error,no error
+motor_too_many_rotations.cpp,dcmotor error,dcmotor error,dcmotor error
+WrongServoAngleValue.cpp,no error,no error,no error
+Motors_wrong_delay.cpp,dcmotor error,no error,no error
+coding_using_variable_before_assignment.cpp,coding error,coding error,coding error
+gyro_reset_yaw_in_loop.cpp,gyro error,gyro error,gyro error
+coding_using_wrong_operator.cpp,coding error,coding error,coding error
+notUsingArgumentInFunction_solution.cpp,no error,no error,no error
+TOF_notCalling_readDistance.cpp,distance sensor error,distance sensor error,distance sensor error
+Motor_huge_degree_values.cpp,dcmotor error,dcmotor error,dcmotor error
+wrongportscreen.cpp,no error,screen error,screen error
+notUsingStop_solution.cpp,no error,coding error,dcmotor error
+NoDelayafterInitialisation.cpp,no error,no error,no error
+Motor_zero_speed.cpp,dcmotor error,no error,no error
+coding_variable_not_in_scope.cpp,coding error,coding error,coding error
+Motor_both_same_port.cpp,dcmotor error,dcmotor error,dcmotor error
+clearAtWrongPlace.cpp,no error,screen error,screen error
+coding_joining_string_with_int.cpp,coding error,coding error,coding error
+Inconsistance delay_solution.cpp,no error,no error,no error

@@ -1,0 +1,19 @@
+{
+  "error_categories": [
+    "coding error",
+    "colorsensor error",
+    "dcmotor error",
+    "distance sensor error",
+    "gyro error",
+    "screen error"
+  ],
+  "all_categories_for_llm": [
+    "no error",
+    "coding error",
+    "colorsensor error",
+    "dcmotor error",
+    "distance sensor error",
+    "gyro error",
+    "screen error"
+  ]
+}

@@ -1,0 +1,1809 @@
+filename,abs_path,relative_path,code_content,has_error_label,label,error_description
+Coding_always_true.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Coding_always_true.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Coding_always_true.cpp,"#include <Arduino.h>
+
+int count = 0;
+void setup() {}
+void loop() {
+  while(count = 10) {} // Always true!
+}
+",True,coding error,Coding always true error
+Coding_reset_every_time.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Coding_reset_every_time.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Coding_reset_every_time.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  int count = 0; // Resets every loop!
+  count++;
+  Serial.println(count); // Always 1!
+}
+",True,coding error,Coding reset every time error
+Inconsistance delay.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Inconsistance delay.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Inconsistance delay.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+void setup(){
+    pinMode(2, OUTPUT);
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(500,-60);
+    digitalWrite(2,HIGH);
+    delay(50);
+    digitalWrite(2, LOW);
+    delay(500);
+    motor.move_degrees(500,60);
+    digitalWrite(2, HIGH);
+    delay(5000);
+    digitalWrite(2, LOW);
+    delay(500);
+    digitalWrite(2, HIGH);
+    delay(500);
+    digitalWrite(2, LOW);
+}
+",False,no error,No labeled error
+Inconsistance delay_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Inconsistance delay_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Inconsistance delay_solution.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+void setup(){
+    pinMode(2, OUTPUT);
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(500,-60);
+    digitalWrite(2,HIGH);
+    delay(500);
+    digitalWrite(2, LOW);
+    delay(500);
+    motor.move_degrees(500,60);
+    digitalWrite(2, HIGH);
+    delay(500);
+    digitalWrite(2, LOW);
+    delay(500);
+    digitalWrite(2, HIGH);
+    delay(500);
+    digitalWrite(2, LOW);
+}
+",False,no error,No labeled error
+coding_always_true2.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_always_true2.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_always_true2.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  if(5) { // Non-zero is true!
+    Serial.println(""Always"");
+  }
+}
+",True,coding error,coding always true2 error
+coding_case_sensitive.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_case_sensitive.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_case_sensitive.cpp,"#include <Arduino.h>
+
+String input = ""start"";
+void setup() {
+  Serial.begin(115200);
+}
+void loop() {
+  if(input == ""START"") {} // Case sensitive!
+}
+",True,coding error,coding case sensitive error
+coding_empty_loop.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_empty_loop.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_empty_loop.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  while(true); // Does nothing forever!
+}
+",True,coding error,coding empty loop error
+coding_if_without_braces.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_if_without_braces.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_if_without_braces.cpp,"#include <Arduino.h>
+
+int a = 5, b = 10;
+void setup() {}
+void loop() {
+  if(a > 0)
+    if(b > 0)
+      Serial.println(""Both positive"");
+  else
+    Serial.println(""Huh?""); // Belongs to inner if!
+}
+",True,coding error,coding if without braces error
+coding_infinite_loop_inSetup.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_infinite_loop_inSetup.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_infinite_loop_inSetup.cpp,"#include <Arduino.h>
+// MISTAKE 61
+// Infinite loop in setup
+void setup() {
+  while(true) {
+    delay(100);
+  }
+  Serial.begin(115200); // Never reached!
+}
+void loop() {}
+",True,coding error,coding infinite loop inSetup error
+coding_joining_string_with_int.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_joining_string_with_int.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_joining_string_with_int.cpp,"#include <Arduino.h>
+
+
+int value = 42;
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Value: "" + value); // Wrong!
+}
+void loop() {}
+",True,coding error,coding joining string with int error
+coding_loop_with_wrong_increment.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_loop_with_wrong_increment.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_loop_with_wrong_increment.cpp,"#include <Arduino.h>
+
+void setup() {
+  Serial.begin(115200);
+}
+void loop() {
+  for(int i = 10; i > 0; i++) {} // Infinite loop!
+}
+",True,coding error,coding loop with wrong increment error
+coding_missing_braces.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_missing_braces.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_missing_braces.cpp,"#include <Arduino.h>
+
+int x = 5;
+void setup() {}
+void loop() {
+  if(x > 0)
+    Serial.println(""Positive"");
+    Serial.println(""More""); 
+}
+",True,coding error,coding missing braces error
+coding_missing_return_statement.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_missing_return_statement.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_missing_return_statement.cpp,"#include <Arduino.h>
+
+int calculate() {
+  int result = 5 + 5;
+  // Missing return statement!
+}
+void setup() {
+  int x = calculate();
+}
+void loop() {}
+",True,coding error,coding missing return statement error
+coding_nothing_in_setup.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_nothing_in_setup.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_nothing_in_setup.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+void setup() {}
+void loop() {
+  Wire.begin(); // Should be in setup!
+  ZebraScreen screen(0);
+  screen.begin();
+  screen.write(""Hello"");
+}
+",True,coding error,coding nothing in setup error
+coding_random_starting_value.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value.cpp,"#include <Arduino.h>
+
+int counter;
+void setup() {}
+void loop() {
+  counter++; // Random starting value!
+}
+",True,coding error,coding random starting value error
+coding_random_starting_value2.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value2.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value2.cpp,"#include <Arduino.h>
+
+float distance;
+void setup() {}
+void loop() {
+  distance = distance + 1.0; // Random start!
+}
+",True,coding error,coding random starting value2 error
+coding_random_starting_value3.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value3.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value3.cpp,"#include <Arduino.h>
+
+bool running;
+void setup() {}
+void loop() {
+  if(running) {} // Undefined!
+}
+",True,coding error,coding random starting value3 error
+coding_same_name_variables.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_same_name_variables.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_same_name_variables.cpp,"#include <Arduino.h>
+
+
+int value = 5;
+void setup() {
+  float value = 3.14; 
+  Serial.begin(115200);
+}
+void loop() {
+  Serial.println(value); // Which one?
+}
+",True,coding error,coding same name variables error
+coding_semicolon_afterIf.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_semicolon_afterIf.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_semicolon_afterIf.cpp,"#include <Arduino.h>
+
+int dist = 100;
+void setup() {}
+void loop() {
+  if(dist < 50); // Extra semicolon!
+    { /* This always runs! */ }
+}
+",True,coding error,coding semicolon afterIf error
+coding_static_variable_confusion.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_static_variable_confusion.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_static_variable_confusion.cpp,"#include <Arduino.h>
+
+void printCount() {
+  static int count = 0;
+  count++;
+  Serial.println(count);
+}
+void setup() {
+  Serial.begin(115200);
+  printCount();
+  count = 0; 
+}
+void loop() {}
+",True,coding error,coding static variable confusion error
+coding_using_variable_before_assignment.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_variable_before_assignment.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_variable_before_assignment.cpp,"#include <Arduino.h>
+
+int speed;
+void setup() {
+  Serial.begin(115200);
+  Serial.println(speed); // Undefined!
+  speed = 50;
+}
+void loop() {}
+",True,coding error,coding using variable before assignment error
+coding_using_wrong_baudrate.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_wrong_baudrate.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_wrong_baudrate.cpp,"#include <Arduino.h>
+
+void setup() {
+  Serial.begin(9600); // Should be
+  Serial.println(""Hello"");
+}
+void loop() {}
+",True,coding error,coding using wrong baudrate error
+coding_using_wrong_operator.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_wrong_operator.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_wrong_operator.cpp,"#include <Arduino.h>
+
+int a = 5, b = 10;
+void setup() {}
+void loop() {
+  if(a > 0 & b > 0) {} // Should be &&
+}
+",True,coding error,coding using wrong operator error
+coding_variable_not_in_scope.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_variable_not_in_scope.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_variable_not_in_scope.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  for(int i = 0; i < 10; i++) {}
+  Serial.println(i); // i not in scope!
+}
+",True,coding error,coding variable not in scope error
+coding_variable_not_in_scope2.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_variable_not_in_scope2.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_variable_not_in_scope2.cpp,"#include <Arduino.h>
+
+void setup() {
+  if(true) {
+    int temp = 25;
+  }
+  Serial.begin(115200);
+  Serial.println(temp); // Not in scope!
+}
+void loop() {}
+",True,coding error,coding variable not in scope2 error
+coding_wrong_loop_condition.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_loop_condition.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_loop_condition.cpp,"#include <Arduino.h>
+void setup(){
+for(int i = 0; i < 10; i--) { // i decreases!
+  Serial.println(i);
+}
+}
+",True,coding error,coding wrong loop condition error
+coding_wrong_operator.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator.cpp,"#include <Arduino.h>
+
+int sensor = 5;
+void setup() {}
+void loop() {
+  if(sensor =! 0) {} // Should be !=
+}
+",True,coding error,coding wrong operator error
+coding_wrong_operator2.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator2.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator2.cpp,"#include <Arduino.h>
+
+int speed;
+void setup() {
+  speed == 50; // Should be =
+}
+void loop() {}
+",True,coding error,coding wrong operator2 error
+coding_wrong_operator3.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator3.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator3.cpp,"#include <Arduino.h>
+// MISTAKE 142
+// Using single | instead of ||
+bool flag1 = true, flag2 = false;
+void setup() {}
+void loop() {
+  if(flag1 | flag2) {} // Should be ||
+}
+",True,coding error,coding wrong operator3 error
+coding_wrong_port.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_port.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_port.cpp,"#include <Arduino.h>
+#include <ZebraColour.h>
+#include <ZebraTOF.h>
+
+
+ZebraTOF tof(2);
+ZebraColour color(2); // Same port!
+void setup() {
+  Wire.begin();
+  tof.begin();
+  color.begin(); // Conflict!
+}
+void loop() {}
+",True,coding error,coding wrong port error
+coding_wrong_serial_function.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_serial_function.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_serial_function.cpp,"#include <Arduino.h>
+
+void setup() {
+  Serial.begin(115200);
+  Serial.write(""Hello""); // Should use println
+}
+void loop() {}
+",True,coding error,coding wrong serial function error
+notUsingArgumentInFunction.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/notUsingArgumentInFunction.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/notUsingArgumentInFunction.cpp,"// Note: partial code shown — see full context in corresponding image
+void forward(float g) {
+    int gyro = 30;
+    angle = (int)(0.8 * (gyro - (offsetangle)));  // Steering correction
+    int pos = 95 - angle;                          // Servo position
+    myservo.write(pos);
+    motor.run_motor(1, 80);                        // Run motor forward
+}
+",False,no error,No labeled error
+notUsingArgumentInFunction_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/notUsingArgumentInFunction_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/notUsingArgumentInFunction_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+void forward(float g) {
+    angle = (int)(0.8 * (g - (offsetangle)));  // Steering correction
+    int pos = 95 - angle;                       // Servo position
+    myservo.write(pos);
+    motor.run_motor(1, 80);                     // Run motor forward
+}
+",False,no error,No labeled error
+serialprintuse.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/serialprintuse.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/serialprintuse.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include <ZebraGyro.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+
+ZebraGyro gyro(7, 2);  // Port 7, interrupt pin 2
+SMotor2 motor(2);
+ZebraServo servo(1);
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+    motor.begin();
+    servo.begin();
+}
+
+void loop() {
+    gyro.update();
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    servo.run_angles(90);
+    while (gyro.getYaw()<90)
+    {
+        gyro.update();
+        Serial.print(""Yaw: "");
+        Serial.println(gyro.getYaw());
+        servo.run_angles(45);
+        Serial.println(""servo is at 45"");
+        motor.run_motor(40);
+        Serial.println(""motor is moving"");
+    }
+    motor.stop_motor();
+    delay(500);
+    gyro.resetYaw();
+}
+",False,no error,No labeled error
+serialprintuse_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/serialprintuse_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/serialprintuse_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include <ZebraGyro.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+
+ZebraGyro gyro(7, 2);  // Port 7, interrupt pin 2
+SMotor2 motor(2);
+ZebraServo servo(1);
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+    motor.begin();
+    servo.begin();
+}
+
+void loop() {
+    gyro.update();
+    servo.run_angles(90);
+    while (gyro.getYaw()<90)
+    {
+        gyro.update();
+        servo.run_angles(45);
+        motor.run_motor(40);
+    }
+    motor.stop_motor();
+    delay(500);
+    gyro.resetYaw();
+}
+",False,no error,No labeled error
+usingwrongbaudrate.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/usingwrongbaudrate.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/usingwrongbaudrate.cpp,"// Note: partial code shown — see full context in corresponding image
+void setup() {
+    Serial.begin(9600);
+    Wire.begin();
+
+    sensor.begin();
+    motor.begin();
+    steering.begin();
+
+    steering.run_angles(90);
+    delay(2000);
+}
+",False,no error,No labeled error
+usingwrongbaudrate_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/usingwrongbaudrate_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/usingwrongbaudrate_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+void setup() {
+    Serial.begin(115200);
+    Wire.begin();
+
+    sensor.begin();
+    motor.begin();
+    steering.begin();
+
+    steering.run_angles(90);
+    delay(2000);
+}
+",False,no error,No labeled error
+wrongOperator.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongOperator.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongOperator.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+  // Turn right until 90 degrees
+  Serial.println(""Turning to 90 degrees..."");
+
+  gyro.update();
+  while (gyro.getYaw() == 90) {
+    gyro.update();
+    leftMotor.run_motor(50);   // Left motor forward
+    rightMotor.run_motor(-50); // Right motor backward
+
+    Serial.print(""Current angle: "");
+    Serial.println(gyro.getYaw());
+    delay(50);
+  }
+}
+",False,no error,No labeled error
+wrongOperator_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongOperator_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongOperator_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+  // Turn right until 90 degrees
+  Serial.println(""Turning to 90 degrees..."");
+
+  gyro.update();
+  while (gyro.getYaw() < 90) {
+    gyro.update();
+    leftMotor.run_motor(50);   // Left motor forward
+    rightMotor.run_motor(-50); // Right motor backward
+
+    Serial.print(""Current angle: "");
+    Serial.println(gyro.getYaw());
+    delay(50);
+  }
+}
+",False,no error,No labeled error
+wrongcondition.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongcondition.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongcondition.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+    int distance = sensor.readDistance();
+
+
+    if (distance < 300) {
+        Serial.println(""Going forward"");
+        motor.run_motor(60);
+    }
+    else {
+        Serial.println(""Stopping"");
+        motor.stop_motor();
+    }
+
+    delay(100);
+}
+",False,no error,No labeled error
+wrongcondition_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongcondition_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongcondition_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+    if (distance < 300) {
+        Serial.println(""Going forward"");
+        motor.stop_motor();
+    }
+    else {
+        Serial.println(""Stopping"");
+        motor.run_motor(60);
+    }
+
+    delay(100);
+}
+",False,no error,No labeled error
+wrongvariablenames.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongvariablenames.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongvariablenames.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+int a = 500;
+int b = -60;
+int c = 60;
+int d = 2;
+int x = 500;
+
+void setup(){
+    pinMode(d, OUTPUT);
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(a,b);
+    digitalWrite(d,HIGH);
+    delay(x);
+    digitalWrite(d, LOW);
+    delay(x);
+    motor.move_degrees(a,c);
+    digitalWrite(d, HIGH);
+    delay(x);
+    digitalWrite(d, LOW);
+    delay(x);
+}
+",False,no error,No labeled error
+wrongvariablenames_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongvariablenames_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/wrongvariablenames_solution.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+int motorSpeed = 500;           // Speed of motor rotation
+int angleClockwise = -60;       // Angle to rotate clockwise
+int angleCounterClockwise = 60; // Angle to rotate counter-clockwise
+int ledPin = 2;                 // Pin number for LED output
+int delayTime = 500;            // Delay time in milliseconds
+
+void setup(){
+    pinMode(ledPin, OUTPUT);
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(motorSpeed, angleClockwise);
+    digitalWrite(ledPin, HIGH);
+    delay(delayTime);
+    digitalWrite(ledPin, LOW);
+    delay(delayTime);
+
+    motor.move_degrees(motorSpeed, angleCounterClockwise);
+    digitalWrite(ledPin, HIGH);
+    delay(delayTime);
+    digitalWrite(ledPin, LOW);
+    delay(delayTime);
+}
+",False,no error,No labeled error
+CSbeginmissing.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/CSbeginmissing.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/CSbeginmissing.cpp,"#include ""ZebraColour.h""
+
+// Create color sensor on port 1
+ZebraColour colorSensor(1);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing color sensor..."");
+  Serial.println(""Sensor ready!"");
+  delay(1000);
+}
+
+void loop() {
+  // Get full color data
+  ColourData colorData;
+  colorSensor.getFullColourData(colorData);
+
+  // Print detected color
+  Serial.print(""Detected Color: "");
+  Serial.println(colorSensor.getColourName(colorData.colorID));
+
+  // Print RGB values
+  Serial.print(""RGB: ("");
+  Serial.print(colorData.r);
+  Serial.print("", "");
+  Serial.print(colorData.g);
+  Serial.print("", "");
+  Serial.print(colorData.b);
+  Serial.println("")"");
+}
+",False,no error,No labeled error
+CSbeginmissing_Solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/CSbeginmissing_Solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/CSbeginmissing_Solution.cpp,"#include ""ZebraColour.h""
+
+// Create color sensor on port 1
+ZebraColour colorSensor(1);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing color sensor..."");
+  colorSensor.begin();
+  Serial.println(""Sensor ready!"");
+  delay(1000);
+}
+
+void loop() {
+  // Get full color data
+  ColourData colorData;
+  colorSensor.getFullColourData(colorData);
+
+  // Print detected color
+  Serial.print(""Detected Color: "");
+  Serial.println(colorSensor.getColourName(colorData.colorID));
+
+  // Print RGB values
+  Serial.print(""RGB: ("");
+  Serial.print(colorData.r);
+  Serial.print("", "");
+  Serial.print(colorData.g);
+  Serial.print("", "");
+  Serial.print(colorData.b);
+  Serial.println("")"");
+}
+",False,no error,No labeled error
+Color_wrong_color_constant.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/Color_wrong_color_constant.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/Color_wrong_color_constant.cpp,"#include <Arduino.h>
+#include <ZebraColour.h>
+
+ZebraColour sensor(3);
+ColourData data;
+void setup() { Wire.begin(); sensor.begin(); }
+void loop() {
+  sensor.getFullColourData(data);
+  if(data.colorID == 4) {} 
+}
+",True,colorsensor error,Color wrong color constant error
+NoDelayafterInitialisation.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/NoDelayafterInitialisation.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/NoDelayafterInitialisation.cpp,"#include ""ZebraColour.h""
+
+// Create color sensor on port 1
+ZebraColour colorSensor(1);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing color sensor..."");
+  colorSensor.begin();
+  Serial.println(""Sensor ready!"");
+}
+
+void loop() {
+  // Get full color data
+  ColourData colorData;
+  colorSensor.getFullColourData(colorData);
+
+  // Print detected color
+  Serial.print(""Detected Color: "");
+  Serial.println(colorSensor.getColourName(colorData.colorID));
+
+  // Print RGB values
+  Serial.print(""RGB: ("");
+  Serial.print(colorData.r);
+  Serial.print("", "");
+  Serial.print(colorData.g);
+  Serial.print("", "");
+  Serial.print(colorData.b);
+  Serial.println("")"");
+}
+",False,no error,No labeled error
+Solution to all .cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/Solution to all .cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/Solution to all .cpp,"#include ""ZebraColour.h""
+
+// Create color sensor on port 1
+ZebraColour colorSensor(1);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing color sensor..."");
+  colorSensor.begin();
+  Serial.println(""Sensor ready!"");
+  delay(1000);
+}
+
+void loop() {
+  // Get full color data
+  ColourData colorData;
+  colorSensor.getFullColourData(colorData);
+
+  // Print detected color
+  Serial.print(""Detected Color: "");
+  Serial.println(colorSensor.getColourName(colorData.colorID));
+
+  // Print RGB values
+  Serial.print(""RGB: ("");
+  Serial.print(colorData.r);
+  Serial.print("", "");
+  Serial.print(colorData.g);
+  Serial.print("", "");
+  Serial.print(colorData.b);
+  Serial.println("")"");
+}
+",False,no error,No labeled error
+color_no_variables.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/color_no_variables.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/color_no_variables.cpp,"#include <Arduino.h>
+#include ""ZebraColour.h""
+
+ZebraColour sensor(3);
+void setup() {
+  Wire.begin();
+  sensor.begin();
+}
+void loop() {
+  ColourData data;
+  sensor.getFullColourData(data); 
+}
+",True,colorsensor error,color no variables error
+usingWrongVariable.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/usingWrongVariable.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/usingWrongVariable.cpp,"#include ""ZebraColour.h""
+
+// Create color sensor on port 1
+ZebraColour colorSensor(1);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing color sensor..."");
+  colorSensor.begin();
+  Serial.println(""Sensor ready!"");
+}
+
+void loop() {
+  // Get full color data
+  ColourData colorData;
+  colorSensor.getFullColourData(colorData);
+
+  // Print detected color
+  Serial.print(""Detected Color: "");
+  Serial.println(colorSensor.getColourName(colorData.colorID));
+
+  // Print RGB values
+  Serial.print(""RGB: ("");
+  Serial.print(colorData.h);
+  Serial.print("", "");
+  Serial.print(colorData.g);
+  Serial.print("", "");
+  Serial.print(colorData.v);
+  Serial.println("")"");
+}
+",False,no error,No labeled error
+MotorDegreeWithGyro.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/MotorDegreeWithGyro.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/MotorDegreeWithGyro.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include <ZebraGyro.h>
+#include ""SMotor2.h""
+
+ZebraGyro gyro(7, 2);  // Port 7, interrupt pin 2
+SMotor2 motor(2);
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+    motor.begin();
+}
+
+void loop() {
+    gyro.update();
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    while (gyro.getYaw()<90)
+    {
+        motor.move_degrees(200,50);
+    }
+    motor.stop_motor();
+    delay(500);
+    gyro.resetYaw();
+}
+",False,no error,No labeled error
+MotorDegreeWithGyro_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/MotorDegreeWithGyro_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/MotorDegreeWithGyro_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include <ZebraGyro.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+
+ZebraGyro gyro(7, 2);  // Port 7, interrupt pin 2
+SMotor2 motor(2);
+ZebraServo servo(1);
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+    motor.begin();
+    servo.begin();
+}
+
+void loop() {
+    gyro.update();
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    servo.run_angles(90);
+    while (gyro.getYaw()<90)
+    {
+        gyro.update();
+        servo.run_angles(45);
+        motor.run_motor(40);
+    }
+    motor.stop_motor();
+    delay(500);
+    gyro.resetYaw();
+}
+",False,no error,No labeled error
+Motor_begin_missing.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_begin_missing.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_begin_missing.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+ 
+  motors.run(0, 50);
+}
+void loop() {
+
+}
+",True,dcmotor error,Motor begin missing error
+Motor_begin_multiple.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_begin_multiple.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_begin_multiple.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.begin(); 
+  motors.run(0, 50);
+}
+void loop() {}
+",True,dcmotor error,Motor begin multiple error
+Motor_both_same_port.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_both_same_port.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_both_same_port.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(0, 0); 
+void setup() {
+  motors.begin();
+  motors.run(0, 50);
+}
+void loop() {}
+",True,dcmotor error,Motor both same port error
+Motor_constantly_restarting.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_constantly_restarting.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_constantly_restarting.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() { motors.begin(); }
+void loop() {
+  motors.run(0, 50); // Constantly restarting!
+}
+",True,dcmotor error,Motor constantly restarting error
+Motor_huge_degree_values.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_huge_degree_values.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_huge_degree_values.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_degrees(0, 50, 100000);
+}
+void loop() {}
+",True,dcmotor error,Motor huge degree values error
+Motor_move_Zero_time.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_move_Zero_time.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_move_Zero_time.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(0, 50, 0); 
+}
+void loop() {}
+",True,dcmotor error,Motor move Zero time error
+Motor_negative_rotations.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_negative_rotations.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_negative_rotations.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  
+}
+void loop() {
+  motors.move_rotations(0, 50, -1.0);
+}
+",True,dcmotor error,Motor negative rotations error
+Motor_never_stop.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_never_stop.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_never_stop.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 50);
+  delay(2000);
+  
+}
+void loop() {}
+",True,dcmotor error,Motor never stop error
+Motor_no_delay_in_speed_change.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_no_delay_in_speed_change.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_no_delay_in_speed_change.cpp,"#include <Arduino.h>
+#include <SMotor2.h>
+// MISTAKE 118
+// Speed changes too frequently
+SMotor2 motor(1);
+void setup() { motor.begin(); }
+void loop() {
+  motor.run_motor(30);
+  motor.run_motor(60);
+  motor.run_motor(90); //No delay between changes!
+}
+",True,dcmotor error,Motor no delay in speed change error
+Motor_parameters_swapped.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_parameters_swapped.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_parameters_swapped.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(50, 2.0, 0); // Parameters swapped!
+}
+void loop() {}
+",True,dcmotor error,Motor parameters swapped error
+Motor_stop_after_run.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_stop_after_run.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_stop_after_run.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 50);
+  motors.stop_motors(); // Stops immediately!
+}
+void loop() {}
+",True,dcmotor error,Motor stop after run error
+Motor_too_many_decimal_points.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_too_many_decimal_points.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_too_many_decimal_points.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(0, 50, 2.5555555);
+}
+void loop() {}
+",True,dcmotor error,Motor too many decimal points error
+Motor_uninitialized_speed.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_uninitialized_speed.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_uninitialized_speed.cpp,"#include <Arduino.h>
+#include <SMotor2.h>
+
+SMotor2 motors(2);
+int speed;
+void setup() {
+  motors.begin();
+  motors.run_motor(speed); // Uninitialized speed!
+}
+void loop() {}
+",True,dcmotor error,Motor uninitialized speed error
+Motor_unreachable_code.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_unreachable_code.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_unreachable_code.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  while(1) { motors.run(0, 50); }
+  motors.stop_motors(); 
+}
+void loop() {}
+",True,dcmotor error,Motor unreachable error
+Motor_zero_speed.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_zero_speed.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_zero_speed.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 0); 
+}
+void loop() {}
+",True,dcmotor error,Motor zero speed error
+Motors_wrong_delay.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motors_wrong_delay.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motors_wrong_delay.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() { motors.begin(); }
+void loop() {
+  motors.run(0, 50);
+  delay(5000); 
+}
+",True,dcmotor error,Motors wrong delay error
+Wrongport.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Wrongport.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Wrongport.cpp,"#include <Arduino.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+// Create servo on port 3 and motor on port 1
+ZebraServo myServo(3);
+SMotor2 motor(8);
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000); // Give serial time to initialize
+
+  Serial.println(""Initializing motor and servo..."");
+
+  // Initialize motor first, then servo
+  motor.begin();
+  myServo.begin();
+
+  Serial.println(""Initialization complete!"");
+  // color.begin();
+  delay(500);
+}
+
+void loop() {
+  // Move servo to 60 degrees
+  Serial.println(""Servo -> 60°"");
+  myServo.run_angles(60);
+
+  // Move motor forward
+  Serial.println(""Motor -> Forward 1000 degrees"");
+  motor.move_degrees(1000, 50);
+  delay(500);
+  Serial.println(""Done!"");
+}
+",False,no error,No labeled error
+inconsistantMotorValues.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/inconsistantMotorValues.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/inconsistantMotorValues.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+void setup(){
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(2000,-6);
+    delay(1000);
+    motor.move_degrees(200,60);
+    delay(1000);
+}
+",False,no error,No labeled error
+inconsistantMotorValues_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/inconsistantMotorValues_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/inconsistantMotorValues_solution.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+void setup(){
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(2000,-60);
+    delay(1000);
+    motor.move_degrees(200,60);
+    delay(1000);
+}
+",False,no error,No labeled error
+motor_Invalid_speed.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Invalid_speed.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Invalid_speed.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(0, -200, 2.0); 
+}
+void loop() {}
+",True,dcmotor error,motor Invalid speed error
+motor_Invalid_steer.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Invalid_steer.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Invalid_steer.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(200, 50); 
+}
+void loop() {}
+",True,dcmotor error,motor Invalid steer error
+motor_Wrong_speed.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Wrong_speed.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Wrong_speed.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 100); 
+}
+void loop() {}
+",True,dcmotor error,motor Wrong speed error
+motor_too_many_rotations.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_too_many_rotations.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_too_many_rotations.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+ 
+}
+void loop() {
+    motors.move_rotations(0, 50, 610);
+}
+",True,dcmotor error,motor too many rotations error
+motor_veryless_degrees.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_veryless_degrees.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_veryless_degrees.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+}
+void loop() {
+  motors.move_degrees(0, 50, 20); 
+}
+",True,dcmotor error,motor veryless degrees error
+notUsingStop.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/notUsingStop.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/notUsingStop.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+    int distance = sensor.readDistance();
+
+
+    if (distance < 300) {
+        Serial.println(""Going forward"");
+
+    }
+    else {
+        Serial.println(""Stopping"");
+        motor.run_motor(60);
+    }
+
+    delay(100);
+}
+",False,no error,No labeled error
+notUsingStop_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/notUsingStop_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/notUsingStop_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+    if (distance < 300) {
+        Serial.println(""Going forward"");
+        motor.stop_motor();
+    }
+    else {
+        Serial.println(""Stopping"");
+        motor.run_motor(60);
+    }
+
+    delay(100);
+}
+",False,no error,No labeled error
+wrongportMotor_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/wrongportMotor_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/wrongportMotor_solution.cpp,"#include <Arduino.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+// Create servo on port 3 and motor on port 1
+ZebraServo myServo(3);
+SMotor2 motor(1);
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000); // Give serial time to initialize
+
+  Serial.println(""Initializing motor and servo..."");
+
+  // Initialize motor first, then servo
+  motor.begin();
+  myServo.begin();
+
+  Serial.println(""Initialization complete!"");
+  // color.begin();
+  delay(500);
+}
+
+void loop() {
+  // Move servo to 60 degrees
+  Serial.println(""Servo -> 60°"");
+  myServo.run_angles(60);
+
+  // Move motor forward
+  Serial.println(""Motor -> Forward 1000 degrees"");
+  motor.move_degrees(1000, 50);
+  delay(500);
+  Serial.println(""Done!"");
+}
+",False,no error,No labeled error
+TOF_notCalling_readDistance.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_notCalling_readDistance.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_notCalling_readDistance.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+
+ZebraTOF tof(2);
+int dist;
+void setup() { 
+  Wire.begin();
+  Serial.begin(115200);
+  tof.begin(); }
+void loop() {
+  
+  if(dist < 100) { 
+    Serial.println(""stop"");
+   }
+}
+",True,distance sensor error,TOF notCalling readDistance error
+TOF_reading_before_begin.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_reading_before_begin.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_reading_before_begin.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+// MISTAKE 127
+// Reading before begin()
+ZebraTOF tof(2);
+void setup() {
+  Wire.begin();
+  int d = tof.readDistance(); // Before begin()!
+  tof.begin();
+}
+void loop() {}
+",True,distance sensor error,TOF reading before begin error
+TOF_reading_without_storing.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_reading_without_storing.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_reading_without_storing.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+
+ZebraTOF tof(2);
+void setup() {
+  Wire.begin();
+  tof.begin();
+}
+void loop() {
+  tof.readDistance(); // Result ignored!
+  delay(100);
+}
+",True,distance sensor error,TOF reading without storing error
+TOF_tinyDistance.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_tinyDistance.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_tinyDistance.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+
+ZebraTOF tof(2);
+void setup() { 
+  Serial.begin(115200);
+  Wire.begin(); 
+  tof.begin(); 
+
+}
+void loop() {
+  int d = tof.readDistance();
+  if(d < 10) {   // 10mm is tiny! Should be 100+
+    Serial.println(""STOP"")
+  } 
+}
+",True,distance sensor error,TOF tinyDistance error
+sensorMultipleRead.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/sensorMultipleRead.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/sensorMultipleRead.cpp,"// Note: partial code shown — see full context in corresponding image
+// ---------------------- LOOP ----------------------
+void loop() {
+    int start = millis(); // Record loop start time
+
+    // Read distances (limit between 0-1200 mm)
+    rightdist = constrain(right.readDistance1(), 0, 1200);
+    leftdist  = constrain(left.readDistance1(), 0, 1200);
+    frontdist = constrain(front.readDistance1(), 0, 1200);
+
+    // Update gyro orientation
+    gyro.update();
+    yaw = gyro.getYaw();
+
+    // Movement logic depending on number of turns
+    if (count >= 1 && count < 12) {
+    // If already turned at least once but less than 12 times
+      if (side == 1) {
+        rightdist = constrain(right.readDistance1(), 0, 1200);
+        rforwardwall(yaw, rightdist); // Follow right wall
+      } else {
+        leftdist  = constrain(left.readDistance1(), 0, 1200);
+        lforwardwall(yaw, leftdist); // Follow left wall
+      }
+",False,no error,No labeled error
+sensorMultipleRead_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/sensorMultipleRead_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/sensorMultipleRead_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+    int start = millis(); // Record loop start time
+
+    // Read distances (limit between 0-1200 mm)
+    rightdist = constrain(right.readDistance1(), 0, 1200);
+    leftdist  = constrain(left.readDistance1(), 0, 1200);
+    frontdist = constrain(front.readDistance1(), 0, 1200);
+
+    // Update gyro orientation
+    gyro.update();
+    yaw = gyro.getYaw();
+
+    // Movement logic depending on number of turns
+    if (count >= 1 && count < 12) {
+    // If already turned at least once but less than 12 times
+      if (side == 1) {
+        rforwardwall(yaw, rightdist); // Follow right wall
+      } else {
+        lforwardwall(yaw, leftdist); // Follow left wall
+      }
+",False,no error,No labeled error
+GyroNotUpdate.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/GyroNotUpdate.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/GyroNotUpdate.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(7, 2);  // Port 0, interrupt pin 2
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+}
+
+void loop() {
+
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    delay(500);
+}
+",False,no error,No labeled error
+GyroNotUpdate_Solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/GyroNotUpdate_Solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/GyroNotUpdate_Solution.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(7, 2);  // Port 0, interrupt pin 2
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+}
+
+void loop() {
+    gyro.update();
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    delay(500);
+}
+",False,no error,No labeled error
+Gyro_read_without_begin.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/Gyro_read_without_begin.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/Gyro_read_without_begin.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+// MISTAKE 131
+// Reading yaw without begin()
+ZebraGyro gyro(4, 2);
+void setup() {
+  Wire.begin();
+  float yaw = gyro.getYaw(); // Before begin()!
+}
+void loop() {}
+",True,gyro error,Gyro read without begin error
+gyroWrongPort.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyroWrongPort.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyroWrongPort.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(5, 2);
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+}
+
+void loop() {
+    gyro.update();
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    delay(500);
+}
+",False,no error,No labeled error
+gyroWrongPort_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyroWrongPort_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyroWrongPort_solution.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(7, 2);
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    Serial.println(""Starting ZebraGyro..."");
+    gyro.begin();
+}
+
+void loop() {
+    gyro.update();
+    Serial.print(""Yaw: "");
+    Serial.println(gyro.getYaw());
+    delay(500);
+}
+",False,no error,No labeled error
+gyro_compare_without_tolerance.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_compare_without_tolerance.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_compare_without_tolerance.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+
+ZebraGyro gyro(4, 2);
+void setup() {
+  Wire.begin();
+  gyro.begin();
+  gyro.resetYaw();
+}
+void loop() {
+  gyro.update();
+  if(gyro.getYaw() == 90.0) {} // Exact match unlikely!
+}
+",True,gyro error,gyro compare without tolerance error
+gyro_missing_resetYaw.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_missing_resetYaw.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_missing_resetYaw.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(7, 2);
+void setup() {
+  Wire.begin();
+  gyro.begin();
+ 
+  while(gyro.getYaw() < 90) {
+    // statements
+  }
+}
+void loop() {}
+",True,gyro error,gyro missing resetYaw error
+gyro_reset_yaw_in_loop.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_reset_yaw_in_loop.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_reset_yaw_in_loop.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(4, 2);
+void setup() {
+  Wire.begin();
+  gyro.begin();
+}
+void loop() {
+  gyro.resetYaw(); // Resets every loop!
+  float yaw = gyro.getYaw();
+}
+",True,gyro error,gyro reset yaw in loop error
+Not_Including_library.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/Not_Including_library.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/Not_Including_library.cpp,"// write your code here
+SMotor2 motor(2);
+
+void setup(){
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(500,-60);
+    delay(1000);
+    motor.move_degrees(500,60);
+    delay(1000);
+}
+",False,no error,No labeled error
+Not_Including_library_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/Not_Including_library_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/Not_Including_library_solution.cpp,"#include ""Arduino.h""
+#include ""SMotor2.h""
+
+SMotor2 motor(2);
+
+void setup(){
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(500,-60);
+    delay(1000);
+    motor.move_degrees(500,60);
+    delay(1000);
+}
+",False,no error,No labeled error
+WrongSpellingofLibrary.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/WrongSpellingofLibrary.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/WrongSpellingofLibrary.cpp,"// write your code here
+#include ""Arduino.h""
+#include ""SMotar2.h""
+
+SMotor2 motor(2);
+
+void setup(){
+    motor.begin();
+}
+
+void loop(){
+    motor.move_degrees(500,-60);
+    delay(1000);
+    motor.move_degrees(500,60);
+    delay(1000);
+}
+",False,no error,No labeled error
+multipleDeviceOnPort.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/multipleDeviceOnPort.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/multipleDeviceOnPort.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include <ZebraGyro.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+#include ""ZebraColour.h""
+#include ""ZebraTOF.h""
+
+ZebraGyro gyro(7, 2);  // Port 7, interrupt pin 2
+ZebraTOF distanceSensor(1);
+SMotor2 motor(2);
+SMotor2 motor2(2);
+ZebraServo servo(1);
+ZebraColour colorsensor(1);
+",False,no error,No labeled error
+multipleDeviceOnPort_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/multipleDeviceOnPort_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Library/multipleDeviceOnPort_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include <ZebraGyro.h>
+#include ""SMotor2.h""
+#include ""ZebraServo.h""
+#include ""ZebraColour.h""
+#include ""ZebraTOF.h""
+
+ZebraGyro gyro(7, 2);  // Port 7, interrupt pin 2
+ZebraTOF distanceSensor(2);
+SMotor2 motor(2);
+SMotor2 motor2(3);
+ZebraServo servo(1);
+ZebraColour colorsensor(1);
+",False,no error,No labeled error
+SameLineWriting.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/SameLineWriting.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/SameLineWriting.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+    static int counter = 0;
+    screen.clear();
+    // Update line 1 with counter value
+    screen.writeLine(3, ""This is a counter"");
+    screen.writeLine(3, ""Counter: "" + String(counter));
+    counter++;
+    delay(1000);
+}
+",False,no error,No labeled error
+clearAtWrongPlace.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/clearAtWrongPlace.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/clearAtWrongPlace.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+    static int counter = 0;
+
+    // Update line 1 with counter value
+    screen.writeLine(3, ""Counter: "" + String(counter));
+
+    counter++;
+    screen.clear();
+    delay(1000);
+}
+",False,no error,No labeled error
+clearAtWrongPlace_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/clearAtWrongPlace_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/clearAtWrongPlace_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+    static int counter = 0;
+    screen.clear();
+    // Update line 1 with counter value
+    screen.writeLine(3, ""Counter: "" + String(counter));
+    counter++;
+    delay(1000);
+}
+",False,no error,No labeled error
+screen_overlapping.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_overlapping.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_overlapping.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+  screen.write(""Line1"");
+  screen.write(""Line2""); // Overlaps!
+}
+void loop() {}
+",True,screen error,screen overlapping error
+screen_using_long_text.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_using_long_text.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_using_long_text.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+  screen.write(""This is a very long text that won't fit"");
+}
+void loop() {}
+",True,screen error,screen using long text error
+screen_writing_without_clearing.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_writing_without_clearing.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_writing_without_clearing.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+}
+void loop() {
+  screen.write(""Test""); // Overlaps previous!
+  delay(1000);
+}
+",True,screen error,screen writing without clearing error
+screen_wrong_line.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_wrong_line.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_wrong_line.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+  screen.writeLine(10, ""Text""); // Line 10 doesn't exist!
+}
+void loop() {}
+",True,screen error,screen wrong line error
+wrongportscreen.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/wrongportscreen.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/wrongportscreen.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+// Screen is connected through I2C multiplexer at port 1
+ZebraScreen screen(5);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing ZebraScreen..."");
+
+  // Initialize the OLED
+  screen.begin();
+
+  // Show startup message
+  screen.write(""Hello Zebra!"");
+  delay(2000);
+
+  // Clear and prepare
+  screen.clear();
+  screen.writeLine(2, ""ZebraScreen Test"");
+}
+",False,no error,No labeled error
+wrongportscreen_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/wrongportscreen_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Screen/wrongportscreen_solution.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+// Screen is connected through I2C multiplexer at port 0
+ZebraScreen screen(0);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Initializing ZebraScreen..."");
+
+  // Initialize the OLED
+  screen.begin();
+
+  // Show startup message
+  screen.write(""Hello Zebra!"");
+  delay(2000);
+
+  // Clear and prepare
+  screen.clear();
+  screen.writeLine(2, ""ZebraScreen Test"");
+}
+",False,no error,No labeled error
+WrongServoAngleValue.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Servo/WrongServoAngleValue.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Servo/WrongServoAngleValue.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+  // Move servo to 60 degrees
+  Serial.println(""Servo -> 60°"");
+  myServo.run_angles(600);
+
+  // Move motor forward
+  Serial.println(""Motor -> Forward 1000 degrees"");
+  motor.move_degrees(1000, 50);
+  delay(500);
+  Serial.println(""Done!"");
+}
+",False,no error,No labeled error
+WrongServoAngleValue_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Servo/WrongServoAngleValue_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/Servo/WrongServoAngleValue_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+void loop() {
+  // Move servo to 60 degrees
+  Serial.println(""Servo -> 60°"");
+  myServo.run_angles(60);
+
+  // Move motor forward
+  Serial.println(""Motor -> Forward 1000 degrees"");
+  motor.move_degrees(1000, 50);
+  delay(500);
+  Serial.println(""Done!"");
+}
+",False,no error,No labeled error
+NotUsingForLoop.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/NotUsingForLoop.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/NotUsingForLoop.cpp,"// Note: partial code shown — see full context in corresponding image
+    int i, id, x, y, w, h;
+    i = 0;
+    if (husky.getObject(i, id, x, y, w, h)) {
+      Serial.print(""Object #"");
+      Serial.print(i + 1);
+      Serial.print("" - Color ID: "");
+      Serial.print(id);
+      Serial.print("", X: "");
+      Serial.print(x);
+      Serial.print("", Y: "");
+      Serial.print(y);
+      Serial.print("", Width: "");
+      Serial.print(w);
+      Serial.print("", Height: "");
+      Serial.println(h);
+    }
+
+
+    Serial.println(""========================================\n"");
+
+  } else {
+    Serial.println(""Failed to get data from HuskyLens"");
+  }
+
+}
+",False,no error,No labeled error
+NotUsingForLoop_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/NotUsingForLoop_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/NotUsingForLoop_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+    // Loop through ALL detected objects
+    for (int i = 0; i < totalObjects; i++) {
+      int id, x, y, w, h;
+
+      if (husky.getObject(i, id, x, y, w, h)) {
+        Serial.print(""Object #"");
+        Serial.print(i + 1);
+        Serial.print("" - Color ID: "");
+        Serial.print(id);
+        Serial.print("", X: "");
+        Serial.print(x);
+        Serial.print("", Y: "");
+        Serial.print(y);
+        Serial.print("", Width: "");
+        Serial.print(w);
+        Serial.print("", Height: "");
+        Serial.println(h);
+      }
+    }
+
+    Serial.println(""========================================\n"");
+
+  } else {
+    Serial.println(""Failed to get data from HuskyLens"");
+  }
+
+}
+",False,no error,No labeled error
+usingUnnecessaryDelay.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingUnnecessaryDelay.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingUnnecessaryDelay.cpp,"// Note: partial code shown — see full context in corresponding image
+    // Loop through ALL detected objects
+    for (int i = 0; i < totalObjects; i++) {
+      int id, x, y, w, h;
+
+      if (husky.getObject(i, id, x, y, w, h)) {
+        Serial.print(""Object #"");
+        Serial.print(i + 1);
+        Serial.print("" - Color ID: "");
+        Serial.print(id);
+        Serial.print("", X: "");
+        Serial.print(x);
+        Serial.print("", Y: "");
+        Serial.print(y);
+        Serial.print("", Width: "");
+        Serial.print(w);
+        Serial.print("", Height: "");
+        Serial.println(h);
+        delay(1000);
+      }
+    }
+
+    Serial.println(""========================================\n"");
+
+  } else {
+    Serial.println(""Failed to get data from HuskyLens"");
+  }
+
+  delay(2000); // Update every 500ms
+
+}
+",False,no error,No labeled error
+usingUnnecessaryDelay2.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingUnnecessaryDelay2.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingUnnecessaryDelay2.cpp,"// Note: partial code shown — see full context in corresponding image
+    // Loop through ALL detected objects
+    for (int i = 0; i < totalObjects; i++) {
+      int id, x, y, w, h;
+
+      if (husky.getObject(i, id, x, y, w, h)) {
+        Serial.print(""Object #"");
+        Serial.print(i + 1);
+        Serial.print("" - Color ID: "");
+        Serial.print(id);
+        Serial.print("", X: "");
+        Serial.print(x);
+        Serial.print("", Y: "");
+        Serial.print(y);
+        Serial.print("", Width: "");
+        Serial.print(w);
+        Serial.print("", Height: "");
+        Serial.println(h);
+      }
+    }
+
+    Serial.println(""========================================\n"");
+
+  } else {
+    Serial.println(""Failed to get data from HuskyLens"");
+  }
+
+  delay(2000); // Update every 500ms
+
+}
+",False,no error,No labeled error
+usingWrongPins.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingWrongPins.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingWrongPins.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include ""ZebraHuskyLens.h""
+
+ZebraHuskyLens husky(15, 6);
+
+void setup() {
+  if (!husky.begin()) {
+    Serial.println(""Failed to initialize HuskyLens!"");
+    while(1);
+  }
+  Serial.println(""HuskyLens Ready - Detecting All Objects"");
+}
+
+void loop() {
+  if (husky.update()) {
+
+    if (!husky.isLearned()) {
+      Serial.println(""Nothing learned yet!"");
+      delay(1000);
+      return;
+    }
+
+    if (!husky.isDetected()) {
+      Serial.println(""No objects detected"");
+      delay(500);
+      return;
+    }
+",False,no error,No labeled error
+usingWrongPins_solution.cpp,/Users/fereshteh/Zebra_AI/HintGenerator/AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingWrongPins_solution.cpp,AI Pilot/Vector_AI/SDV (C++)/Vector Institute Images/huskylens/usingWrongPins_solution.cpp,"// Note: partial code shown — see full context in corresponding image
+#include <Arduino.h>
+#include ""ZebraHuskyLens.h""
+
+ZebraHuskyLens husky(5, 19);
+
+void setup() {
+  if (!husky.begin()) {
+    Serial.println(""Failed to initialize HuskyLens!"");
+    while(1);
+  }
+  Serial.println(""HuskyLens Ready - Detecting All Objects"");
+}
+
+void loop() {
+  if (husky.update()) {
+
+    if (!husky.isLearned()) {
+      Serial.println(""Nothing learned yet!"");
+      delay(1000);
+      return;
+    }
+
+    if (!husky.isDetected()) {
+      Serial.println(""No objects detected"");
+      delay(500);
+      return;
+    }
+",False,no error,No labeled error

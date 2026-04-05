@@ -1,0 +1,682 @@
+file_name,file_path,code_content,error_description,category
+gyro_missing_resetYaw.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_missing_resetYaw.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(7, 2);
+void setup() {
+  Wire.begin();
+  gyro.begin();
+ 
+  while(gyro.getYaw() < 90) {
+    // statements
+  }
+}
+void loop() {}
+",gyro missing resetYaw error,gyro error
+gyro_reset_yaw_in_loop.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_reset_yaw_in_loop.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+ZebraGyro gyro(4, 2);
+void setup() {
+  Wire.begin();
+  gyro.begin();
+}
+void loop() {
+  gyro.resetYaw(); // Resets every loop!
+  float yaw = gyro.getYaw();
+}
+",gyro reset yaw in loop error,gyro error
+Gyro_read_without_begin.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/Gyro_read_without_begin.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+// MISTAKE 131
+// Reading yaw without begin()
+ZebraGyro gyro(4, 2);
+void setup() {
+  Wire.begin();
+  float yaw = gyro.getYaw(); // Before begin()!
+}
+void loop() {}
+",Gyro read without begin error,gyro error
+gyro_compare_without_tolerance.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Gyro/gyro_compare_without_tolerance.cpp,"#include <Arduino.h>
+#include <ZebraGyro.h>
+
+
+ZebraGyro gyro(4, 2);
+void setup() {
+  Wire.begin();
+  gyro.begin();
+  gyro.resetYaw();
+}
+void loop() {
+  gyro.update();
+  if(gyro.getYaw() == 90.0) {} // Exact match unlikely!
+}
+",gyro compare without tolerance error,gyro error
+color_no_variables.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/color_no_variables.cpp,"#include <Arduino.h>
+#include ""ZebraColour.h""
+
+ZebraColour sensor(3);
+void setup() {
+  Wire.begin();
+  sensor.begin();
+}
+void loop() {
+  ColourData data;
+  sensor.getFullColourData(data); 
+}
+",color no variables error,colorsensor error
+Color_wrong_color_constant.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/ColorSensor/Color_wrong_color_constant.cpp,"#include <Arduino.h>
+#include <ZebraColour.h>
+
+ZebraColour sensor(3);
+ColourData data;
+void setup() { Wire.begin(); sensor.begin(); }
+void loop() {
+  sensor.getFullColourData(data);
+  if(data.colorID == 4) {} 
+}
+",Color wrong color constant error,colorsensor error
+TOF_reading_without_storing.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_reading_without_storing.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+
+ZebraTOF tof(2);
+void setup() {
+  Wire.begin();
+  tof.begin();
+}
+void loop() {
+  tof.readDistance(); // Result ignored!
+  delay(100);
+}
+",TOF reading without storing error,distance sensor error
+TOF_reading_before_begin.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_reading_before_begin.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+// MISTAKE 127
+// Reading before begin()
+ZebraTOF tof(2);
+void setup() {
+  Wire.begin();
+  int d = tof.readDistance(); // Before begin()!
+  tof.begin();
+}
+void loop() {}
+",TOF reading before begin error,distance sensor error
+TOF_notCalling_readDistance.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_notCalling_readDistance.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+
+ZebraTOF tof(2);
+int dist;
+void setup() { 
+  Wire.begin();
+  Serial.begin(115200);
+  tof.begin(); }
+void loop() {
+  
+  if(dist < 100) { 
+    Serial.println(""stop"");
+   }
+}
+",TOF notCalling readDistance error,distance sensor error
+TOF_tinyDistance.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Distance sensor/TOF_tinyDistance.cpp,"#include <Arduino.h>
+#include <ZebraTOF.h>
+
+ZebraTOF tof(2);
+void setup() { 
+  Serial.begin(115200);
+  Wire.begin(); 
+  tof.begin(); 
+
+}
+void loop() {
+  int d = tof.readDistance();
+  if(d < 10) {   // 10mm is tiny! Should be 100+
+    Serial.println(""STOP"")
+  } 
+}
+",TOF tinyDistance error,distance sensor error
+coding_variable_not_in_scope.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_variable_not_in_scope.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  for(int i = 0; i < 10; i++) {}
+  Serial.println(i); // i not in scope!
+}
+",coding variable not in scope error,coding error
+Coding_reset_every_time.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Coding_reset_every_time.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  int count = 0; // Resets every loop!
+  count++;
+  Serial.println(count); // Always 1!
+}
+",Coding reset every time error,coding error
+Coding_always_true.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/Coding_always_true.cpp,"#include <Arduino.h>
+
+int count = 0;
+void setup() {}
+void loop() {
+  while(count = 10) {} // Always true!
+}
+",Coding always true error,coding error
+coding_static_variable_confusion.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_static_variable_confusion.cpp,"#include <Arduino.h>
+
+void printCount() {
+  static int count = 0;
+  count++;
+  Serial.println(count);
+}
+void setup() {
+  Serial.begin(115200);
+  printCount();
+  count = 0; 
+}
+void loop() {}
+",coding static variable confusion error,coding error
+coding_loop_with_wrong_increment.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_loop_with_wrong_increment.cpp,"#include <Arduino.h>
+
+void setup() {
+  Serial.begin(115200);
+}
+void loop() {
+  for(int i = 10; i > 0; i++) {} // Infinite loop!
+}
+",coding loop with wrong increment error,coding error
+coding_infinite_loop_inSetup.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_infinite_loop_inSetup.cpp,"#include <Arduino.h>
+// MISTAKE 61
+// Infinite loop in setup
+void setup() {
+  while(true) {
+    delay(100);
+  }
+  Serial.begin(115200); // Never reached!
+}
+void loop() {}
+",coding infinite loop inSetup error,coding error
+coding_empty_loop.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_empty_loop.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  while(true); // Does nothing forever!
+}
+",coding empty loop error,coding error
+coding_nothing_in_setup.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_nothing_in_setup.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+void setup() {}
+void loop() {
+  Wire.begin(); // Should be in setup!
+  ZebraScreen screen(0);
+  screen.begin();
+  screen.write(""Hello"");
+}
+",coding nothing in setup error,coding error
+coding_using_wrong_baudrate.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_wrong_baudrate.cpp,"#include <Arduino.h>
+
+void setup() {
+  Serial.begin(9600); // Should be
+  Serial.println(""Hello"");
+}
+void loop() {}
+",coding using wrong baudrate error,coding error
+coding_wrong_operator.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator.cpp,"#include <Arduino.h>
+
+int sensor = 5;
+void setup() {}
+void loop() {
+  if(sensor =! 0) {} // Should be !=
+}
+",coding wrong operator error,coding error
+coding_if_without_braces.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_if_without_braces.cpp,"#include <Arduino.h>
+
+int a = 5, b = 10;
+void setup() {}
+void loop() {
+  if(a > 0)
+    if(b > 0)
+      Serial.println(""Both positive"");
+  else
+    Serial.println(""Huh?""); // Belongs to inner if!
+}
+",coding if without braces error,coding error
+coding_semicolon_afterIf.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_semicolon_afterIf.cpp,"#include <Arduino.h>
+
+int dist = 100;
+void setup() {}
+void loop() {
+  if(dist < 50); // Extra semicolon!
+    { /* This always runs! */ }
+}
+",coding semicolon afterIf error,coding error
+coding_random_starting_value3.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value3.cpp,"#include <Arduino.h>
+
+bool running;
+void setup() {}
+void loop() {
+  if(running) {} // Undefined!
+}
+",coding random starting value3 error,coding error
+coding_missing_braces.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_missing_braces.cpp,"#include <Arduino.h>
+
+int x = 5;
+void setup() {}
+void loop() {
+  if(x > 0)
+    Serial.println(""Positive"");
+    Serial.println(""More""); 
+}
+",coding missing braces error,coding error
+coding_random_starting_value.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value.cpp,"#include <Arduino.h>
+
+int counter;
+void setup() {}
+void loop() {
+  counter++; // Random starting value!
+}
+",coding random starting value error,coding error
+coding_random_starting_value2.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_random_starting_value2.cpp,"#include <Arduino.h>
+
+float distance;
+void setup() {}
+void loop() {
+  distance = distance + 1.0; // Random start!
+}
+",coding random starting value2 error,coding error
+coding_wrong_operator3.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator3.cpp,"#include <Arduino.h>
+// MISTAKE 142
+// Using single | instead of ||
+bool flag1 = true, flag2 = false;
+void setup() {}
+void loop() {
+  if(flag1 | flag2) {} // Should be ||
+}
+",coding wrong operator3 error,coding error
+coding_variable_not_in_scope2.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_variable_not_in_scope2.cpp,"#include <Arduino.h>
+
+void setup() {
+  if(true) {
+    int temp = 25;
+  }
+  Serial.begin(115200);
+  Serial.println(temp); // Not in scope!
+}
+void loop() {}
+",coding variable not in scope2 error,coding error
+coding_case_sensitive.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_case_sensitive.cpp,"#include <Arduino.h>
+
+String input = ""start"";
+void setup() {
+  Serial.begin(115200);
+}
+void loop() {
+  if(input == ""START"") {} // Case sensitive!
+}
+",coding case sensitive error,coding error
+coding_wrong_operator2.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_operator2.cpp,"#include <Arduino.h>
+
+int speed;
+void setup() {
+  speed == 50; // Should be =
+}
+void loop() {}
+",coding wrong operator2 error,coding error
+coding_wrong_loop_condition.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_loop_condition.cpp,"#include <Arduino.h>
+void setup(){
+for(int i = 0; i < 10; i--) { // i decreases!
+  Serial.println(i);
+}
+}
+",coding wrong loop condition error,coding error
+coding_using_wrong_operator.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_wrong_operator.cpp,"#include <Arduino.h>
+
+int a = 5, b = 10;
+void setup() {}
+void loop() {
+  if(a > 0 & b > 0) {} // Should be &&
+}
+",coding using wrong operator error,coding error
+coding_using_variable_before_assignment.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_using_variable_before_assignment.cpp,"#include <Arduino.h>
+
+int speed;
+void setup() {
+  Serial.begin(115200);
+  Serial.println(speed); // Undefined!
+  speed = 50;
+}
+void loop() {}
+",coding using variable before assignment error,coding error
+coding_wrong_serial_function.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_serial_function.cpp,"#include <Arduino.h>
+
+void setup() {
+  Serial.begin(115200);
+  Serial.write(""Hello""); // Should use println
+}
+void loop() {}
+",coding wrong serial function error,coding error
+coding_missing_return_statement.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_missing_return_statement.cpp,"#include <Arduino.h>
+
+int calculate() {
+  int result = 5 + 5;
+  // Missing return statement!
+}
+void setup() {
+  int x = calculate();
+}
+void loop() {}
+",coding missing return statement error,coding error
+coding_same_name_variables.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_same_name_variables.cpp,"#include <Arduino.h>
+
+
+int value = 5;
+void setup() {
+  float value = 3.14; 
+  Serial.begin(115200);
+}
+void loop() {
+  Serial.println(value); // Which one?
+}
+",coding same name variables error,coding error
+coding_joining_string_with_int.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_joining_string_with_int.cpp,"#include <Arduino.h>
+
+
+int value = 42;
+void setup() {
+  Serial.begin(115200);
+  Serial.println(""Value: "" + value); // Wrong!
+}
+void loop() {}
+",coding joining string with int error,coding error
+coding_wrong_port.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_wrong_port.cpp,"#include <Arduino.h>
+#include <ZebraColour.h>
+#include <ZebraTOF.h>
+
+
+ZebraTOF tof(2);
+ZebraColour color(2); // Same port!
+void setup() {
+  Wire.begin();
+  tof.begin();
+  color.begin(); // Conflict!
+}
+void loop() {}
+",coding wrong port error,coding error
+coding_always_true2.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Coding Mistakes/coding_always_true2.cpp,"#include <Arduino.h>
+
+void setup() {}
+void loop() {
+  if(5) { // Non-zero is true!
+    Serial.println(""Always"");
+  }
+}
+",coding always true2 error,coding error
+Motor_too_many_decimal_points.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_too_many_decimal_points.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(0, 50, 2.5555555);
+}
+void loop() {}
+",Motor too many decimal points error,dcmotor error
+Motor_no_delay_in_speed_change.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_no_delay_in_speed_change.cpp,"#include <Arduino.h>
+#include <SMotor2.h>
+// MISTAKE 118
+// Speed changes too frequently
+SMotor2 motor(1);
+void setup() { motor.begin(); }
+void loop() {
+  motor.run_motor(30);
+  motor.run_motor(60);
+  motor.run_motor(90); //No delay between changes!
+}
+",Motor no delay in speed change error,dcmotor error
+Motor_both_same_port.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_both_same_port.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(0, 0); 
+void setup() {
+  motors.begin();
+  motors.run(0, 50);
+}
+void loop() {}
+",Motor both same port error,dcmotor error
+Motor_begin_missing.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_begin_missing.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+ 
+  motors.run(0, 50);
+}
+void loop() {
+
+}
+",Motor begin missing error,dcmotor error
+Motor_begin_multiple.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_begin_multiple.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.begin(); 
+  motors.run(0, 50);
+}
+void loop() {}
+",Motor begin multiple error,dcmotor error
+motor_too_many_rotations.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_too_many_rotations.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+ 
+}
+void loop() {
+    motors.move_rotations(0, 50, 610);
+}
+",motor too many rotations error,dcmotor error
+Motor_stop_after_run.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_stop_after_run.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 50);
+  motors.stop_motors(); // Stops immediately!
+}
+void loop() {}
+",Motor stop after run error,dcmotor error
+Motor_negative_rotations.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_negative_rotations.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  
+}
+void loop() {
+  motors.move_rotations(0, 50, -1.0);
+}
+",Motor negative rotations error,dcmotor error
+motor_Wrong_speed.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Wrong_speed.cpp,"#include <Arduino.h>
+#include <SMotorPair.h>
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 100); 
+}
+void loop() {}
+",motor Wrong speed error,dcmotor error
+Motor_zero_speed.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_zero_speed.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 0); 
+}
+void loop() {}
+",Motor zero speed error,dcmotor error
+motor_Invalid_speed.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Invalid_speed.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(0, -200, 2.0); 
+}
+void loop() {}
+",motor Invalid speed error,dcmotor error
+motor_veryless_degrees.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_veryless_degrees.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+}
+void loop() {
+  motors.move_degrees(0, 50, 20); 
+}
+",motor veryless degrees error,dcmotor error
+Motors_wrong_delay.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motors_wrong_delay.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() { motors.begin(); }
+void loop() {
+  motors.run(0, 50);
+  delay(5000); 
+}
+",Motors wrong delay error,dcmotor error
+Motor_uninitialized_speed.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_uninitialized_speed.cpp,"#include <Arduino.h>
+#include <SMotor2.h>
+
+SMotor2 motors(2);
+int speed;
+void setup() {
+  motors.begin();
+  motors.run_motor(speed); // Uninitialized speed!
+}
+void loop() {}
+",Motor uninitialized speed error,dcmotor error
+Motor_never_stop.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_never_stop.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(0, 50);
+  delay(2000);
+  
+}
+void loop() {}
+",Motor never stop error,dcmotor error
+Motor_parameters_swapped.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_parameters_swapped.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(50, 2.0, 0); // Parameters swapped!
+}
+void loop() {}
+",Motor parameters swapped error,dcmotor error
+Motor_huge_degree_values.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_huge_degree_values.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_degrees(0, 50, 100000);
+}
+void loop() {}
+",Motor huge degree values error,dcmotor error
+Motor_constantly_restarting.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_constantly_restarting.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() { motors.begin(); }
+void loop() {
+  motors.run(0, 50); // Constantly restarting!
+}
+",Motor constantly restarting error,dcmotor error
+motor_Invalid_steer.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/motor_Invalid_steer.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.run(200, 50); 
+}
+void loop() {}
+",motor Invalid steer error,dcmotor error
+Motor_unreachable_code.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_unreachable_code.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  while(1) { motors.run(0, 50); }
+  motors.stop_motors(); 
+}
+void loop() {}
+",Motor unreachable error,dcmotor error
+Motor_move_Zero_time.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/DCMotor/Motor_move_Zero_time.cpp,"#include <Arduino.h>
+#include ""SMotorPair.h""
+
+SMotorPair motors(1, 2);
+void setup() {
+  motors.begin();
+  motors.move_time(0, 50, 0); 
+}
+void loop() {}
+",Motor move Zero time error,dcmotor error
+screen_wrong_line.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_wrong_line.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+  screen.writeLine(10, ""Text""); // Line 10 doesn't exist!
+}
+void loop() {}
+",screen wrong line error,screen error
+screen_overlapping.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_overlapping.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+  screen.write(""Line1"");
+  screen.write(""Line2""); // Overlaps!
+}
+void loop() {}
+",screen overlapping error,screen error
+screen_writing_without_clearing.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_writing_without_clearing.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+}
+void loop() {
+  screen.write(""Test""); // Overlaps previous!
+  delay(1000);
+}
+",screen writing without clearing error,screen error
+screen_using_long_text.cpp,/content/drive/MyDrive/Vector_AI/SDV (C++)/Vector Institute Images/Screen/screen_using_long_text.cpp,"#include <Arduino.h>
+#include <ZebraScreen.h>
+
+ZebraScreen screen(0);
+void setup() {
+  Wire.begin();
+  screen.begin();
+  screen.write(""This is a very long text that won't fit"");
+}
+void loop() {}
+",screen using long text error,screen error

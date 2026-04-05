@@ -1,0 +1,6 @@
+sample,file,question,n_claims,n_supported,score
+1,TOF_reading_without_storing.cpp,There is a known issue: TOF reading without storing error. W…,3,3,1.0
+2,Motors_wrong_delay.cpp,There is a known issue: Motors wrong delay error. Why might …,6,1,0.167
+3,inconsistantMotorValues.cpp,Why might this code not work as expected?,5,1,0.2
+4,motor_Invalid_speed.cpp,There is a known issue: motor Invalid speed error. Why might…,4,3,0.75
+5,wrongOperator.cpp,Why might this code not work as expected?,6,1,0.167

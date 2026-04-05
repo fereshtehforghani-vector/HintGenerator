@@ -1,0 +1,13 @@
+                       precision    recall  f1-score   support
+
+         coding error       1.00      1.00      1.00         9
+    colorsensor error       1.00      1.00      1.00         1
+        dcmotor error       0.75      0.50      0.60         6
+distance sensor error       1.00      1.00      1.00         1
+           gyro error       1.00      1.00      1.00         1
+             no error       0.81      0.81      0.81        16
+         screen error       0.33      1.00      0.50         1
+
+             accuracy                           0.83        35
+            macro avg       0.84      0.90      0.84        35
+         weighted avg       0.85      0.83      0.83        35
