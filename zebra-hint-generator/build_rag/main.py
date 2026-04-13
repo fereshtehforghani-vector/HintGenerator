@@ -1,21 +1,21 @@
 """
-Cloud Function A — build_rag_database
+Cloud Run service — build_rag_database
 
 Triggered via HTTP (manually or on a schedule when documents change).
 Downloads all knowledge-base documents from Cloud Storage, chunks them,
 embeds with Gemini Embedding 2, and stores vectors in Cloud SQL (pgvector).
 
 Deploy command (see deploy.sh):
-    gcloud functions deploy build-rag-database ...
+    gcloud run deploy build-rag-database --source build_rag/ ...
 """
 
 import json
+import os
 import sys
 import traceback
 
-import functions_framework
+from flask import Flask, request
 
-# Add parent dir so `shared` is importable when deployed alongside this file
 sys.path.insert(0, ".")
 
 from shared.config import (
@@ -27,9 +27,11 @@ from shared.config import (
 from shared.data_loaders import download_gcs_documents, load_all_documents
 from shared.rag_utils import rebuild_vectorstore
 
+app = Flask(__name__)
 
-@functions_framework.http
-def build_rag_database(request):
+
+@app.route("/", methods=["POST"])
+def build_rag_database():
     """
     HTTP handler — rebuilds the PGVector collection from scratch.
 
@@ -42,7 +44,6 @@ def build_rag_database(request):
     try:
         # ── 1. Load secrets ────────────────────────────────────────────────
         print("Loading secrets...")
-        import os
         os.environ["GOOGLE_API_KEY"] = get_secret("GOOGLE_API_KEY")
         os.environ["OPENAI_API_KEY"] = get_secret("OPENAI_API_KEY")
         db_password                  = get_secret("DB_PASSWORD")
@@ -61,10 +62,10 @@ def build_rag_database(request):
         print(f"  {len(chunked_docs)} chunks ready.")
 
         if dry_run:
-            return (
-                json.dumps({"status": "dry_run", "chunks": len(chunked_docs)}),
-                200,
-                {"Content-Type": "application/json"},
+            return app.response_class(
+                response=json.dumps({"status": "dry_run", "chunks": len(chunked_docs)}),
+                status=200,
+                mimetype="application/json",
             )
 
         # ── 4. Rebuild vectorstore ─────────────────────────────────────────
@@ -76,16 +77,21 @@ def build_rag_database(request):
 
         result = {"status": "success", "chunks_indexed": len(chunked_docs)}
         print(f"Done: {result}")
-        return (
-            json.dumps(result),
-            200,
-            {"Content-Type": "application/json"},
+        return app.response_class(
+            response=json.dumps(result),
+            status=200,
+            mimetype="application/json",
         )
 
     except Exception as exc:
         traceback.print_exc()
-        return (
-            json.dumps({"status": "error", "message": str(exc)}),
-            500,
-            {"Content-Type": "application/json"},
+        return app.response_class(
+            response=json.dumps({"status": "error", "message": str(exc)}),
+            status=500,
+            mimetype="application/json",
         )
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)

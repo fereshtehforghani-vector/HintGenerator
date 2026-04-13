@@ -140,8 +140,30 @@ def build_rag_context(
 
     docs = retriever.invoke(query)
 
+    # --- Build the ordered doc list ----------------------------------------
+    # 1. Curriculum chunks come first, deduplicated by source file so each
+    #    lesson gets exactly one sequential number ([1], [2], ...).
+    #    Multiple chunks from the same lesson would create gaps after
+    #    deduplication in lms_references, so we keep only the first
+    #    (highest-relevance) chunk per lesson.
+    # 2. Non-curriculum docs follow, keeping all chunks.
+    seen_sources: set[str] = set()
+    curriculum_docs = []
+    for d in docs:
+        if d.metadata.get("type") == "curriculum":
+            src = d.metadata.get("source", "")
+            if src not in seen_sources:
+                seen_sources.add(src)
+                curriculum_docs.append(d)
+
+    other_docs = [d for d in docs if d.metadata.get("type") != "curriculum"]
+    docs = curriculum_docs + other_docs
+    # -----------------------------------------------------------------------
+
     context_parts = []
-    for i, doc in enumerate(docs, 1):
+    curriculum_idx = 0
+    lib_idx        = 0
+    for doc in docs:
         doc_type = doc.metadata.get("type", "unknown")
         source   = Path(doc.metadata.get("source", "")).name
         snippet  = doc.page_content[:1200].strip()
@@ -153,8 +175,62 @@ def build_rag_context(
             "zebrabot_library" : "📗 ZebraBot Library Header",
             "zebrabot_example" : "💻 ZebraBot Example",
         }.get(doc_type, "📄 Reference")
+
+        # Curriculum passages get [1], [2], … — these numbers appear in lms_references.
+        # All other passages get [L1], [L2], … to avoid citation collisions.
+        if doc_type == "curriculum":
+            curriculum_idx += 1
+            citation = str(curriculum_idx)
+        else:
+            lib_idx += 1
+            citation = f"L{lib_idx}"
+
         context_parts.append(
-            f"[{i}] {label} ({source})\n{snippet}\n{SEPARATOR}"
+            f"[{citation}] {label} ({source})\n{snippet}\n{SEPARATOR}"
         )
 
     return "\n\n".join(context_parts), docs
+
+
+def extract_lms_references(docs: list[LCDoc]) -> list[dict]:
+    """
+    From a list of retrieved documents, return one entry per unique LMS lesson
+    (deduplicated by source file) in the same order they appear in the context.
+
+    The ``ref`` field matches the [N] citation number the LLM used in its
+    response (1-indexed position in the docs list), so the front-end can
+    link "According to [6]" directly to lms_references entry with ref=6.
+
+        {
+            "ref":       6,
+            "title":     "Class 6: Coding Sensor",
+            "module":    7,
+            "course":    "Self Driving Car",
+            "course_id": "sdv",
+            "content":   "<first 800 chars of the lesson text>"
+        }
+    """
+    refs: list[dict] = []
+
+    for i, doc in enumerate(docs, 1):   # i is the [N] number the LLM sees
+        meta = doc.metadata
+        if meta.get("type") != "curriculum":
+            continue
+        # build_rag_context already deduped curriculum by source, so no
+        # gaps are possible here — i will be 1, 2, 3, ... for curriculum.
+        source = meta.get("source", "")
+        try:
+            module = int(meta.get("module", 0))
+        except (ValueError, TypeError):
+            module = 0
+
+        refs.append({
+            "ref":       i,
+            "title":     meta.get("title", Path(source).stem),
+            "module":    module,
+            "course":    meta.get("course", ""),
+            "course_id": meta.get("course_id", ""),
+            "content":   doc.page_content[:800].strip(),
+        })
+
+    return refs

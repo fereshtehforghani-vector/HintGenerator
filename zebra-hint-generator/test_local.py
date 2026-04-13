@@ -25,6 +25,7 @@ CHUNKS_JSON     = REPO_ROOT / "AI Pilot/chunks.json"
 sys.path.insert(0, str(Path(__file__).parent))
 from shared.data_loaders import load_all_documents
 from shared.rag_utils import get_retriever, get_vectorstore, rebuild_vectorstore
+from shared.tutor import AgenticTutor
 from sqlalchemy import create_engine
 
 
@@ -109,12 +110,66 @@ def run_query():
     print("\n=== QUERY complete ===\n")
 
 
+# ── LMS REFERENCES ────────────────────────────────────────────────────────────
+LMS_REF_CASES = [
+    {
+        "label":     "SDV — sensor always 0",
+        "code":      "#include <Arduino.h>\n#include <ZebraTOF.h>\nZebraTOF tof(2);\nint dist;\nvoid setup(){Wire.begin();tof.begin();}\nvoid loop(){if(dist<100){Serial.println(\"stop\");}}",
+        "question":  "Why does my stop condition never trigger?",
+        "course_id": "sdv",
+    },
+    {
+        "label":     "reactive_robtics — variable not updated",
+        "code":      "#include <Arduino.h>\nint x = 0;\nvoid setup(){}\nvoid loop(){Serial.println(x);}",
+        "question":  "Why does x never change?",
+        "course_id": "reactive_robtics",
+    },
+]
+
+
+def run_lms_refs():
+    print("\n=== LMS REFERENCES TEST ===")
+    engine = get_local_engine()
+    vs     = get_vectorstore(engine, COLLECTION_NAME)
+
+    for tc in LMS_REF_CASES:
+        print(f"\n{'='*60}")
+        print(f"TEST: {tc['label']}")
+        print(f"{'='*60}")
+
+        retriever = get_retriever(vs, top_k=10, course_id=tc["course_id"])
+        tutor     = AgenticTutor(provider="OpenAI", retriever=retriever, enable_security=False)
+        result    = tutor.analyse_code(tc["code"], tc["question"])
+
+        print("\n── Tutor response ──────────────────────────────────────")
+        print(result["response"])
+
+        refs = result["lms_references"]
+        print(f"\n── LMS references ({len(refs)} lessons) ────────────────────")
+        if not refs:
+            print("  (none returned)")
+        for ref in refs:
+            print(f"\n  [{ref['ref']}] {ref['title']}")
+            print(f"       course   : {ref['course']} ({ref['course_id']})")
+            print(f"       module   : {ref['module']}")
+            print(f"       content  : {ref['content'][:200].strip()!r}...")
+
+    print("\n=== LMS REFERENCES TEST complete ===\n")
+
+
 # ── main ───────────────────────────────────────────────────────────────────────
 mode = sys.argv[1] if len(sys.argv) > 1 else "both"
-os.environ["OPENAI_API_KEY"] = "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"
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDYY0bGO3_hLioavpepRuHtyazrv8qU0yA"
+
+# API keys — set these as environment variables before running, e.g.:
+#   export OPENAI_API_KEY="sk-..."
+#   export GOOGLE_API_KEY="AIza..."
+for key in ("OPENAI_API_KEY", "GOOGLE_API_KEY"):
+    if not os.environ.get(key):
+        raise EnvironmentError(f"{key} is not set. Export it before running this script.")
 
 if mode in ("build", "both"):
     run_build()
 if mode in ("query", "both"):
     run_query()
+if mode in ("lms_refs", "both"):
+    run_lms_refs()

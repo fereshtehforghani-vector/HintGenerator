@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Literal
 
 from shared.llm_interface import LLMInterface
-from shared.rag_utils import build_rag_context
+from shared.rag_utils import build_rag_context, extract_lms_references
 from shared.security import (
     KID_SAFE_APPENDIX,
     build_security_fallback,
@@ -34,7 +34,10 @@ YOUR CORE RULES — follow these strictly:
    🔍 **Mistake Type**: [category from taxonomy]
    💡 **Hint 1** (gentle nudge — point to the area, NOT the fix)
    🤔 **Guiding Question**: Ask the student a question that will lead them to discover the fix.
-   📚 **Curriculum Reference**: [cite the specific context passage, e.g. "[2] Library Docs"]
+   📚 **Curriculum Reference**: Cite a 📘 Curriculum passage using its [N] number (e.g. "[2]").
+      These numbers are shown to the student as clickable lesson links.
+      ONLY use an [N] number here (never [L1], [L2] etc.).
+      Fall back to a library passage only if no Curriculum passage is relevant.
 5. If you can't find the issue, say so honestly and ask the student to
    describe their intended behaviour.
 6. Be encouraging, concise, and age-appropriate (teens / young adults).
@@ -48,7 +51,9 @@ GROUNDING RULES — these are critical for accuracy:
 • When you mention a library function (e.g. begin(), getYaw(), read()),
   describe it exactly as the context documents it — do not invent parameters,
   return types, or behaviour.
-• Cite context passages by their number, e.g. "According to [3] Library Docs…"
+• Curriculum passages are numbered [1], [2], … and match the LMS lesson links shown to
+  the student.  Library/other passages are numbered [L1], [L2], …
+• Cite passages by their label, e.g. "According to [2] Curriculum…" or "See [L3] Library Docs…"
 • If the retrieved context does NOT contain enough information to explain
   the issue, explicitly say: "The retrieved references do not cover this
   specific topic — here is my best general guidance:" before giving any
@@ -90,7 +95,10 @@ def format_user_prompt(student_code: str, context: str, question: str = "") -> s
 2. Identify the mistake type and provide a progressive hint — do NOT reveal the answer.
 3. Every technical claim you make (function names, parameters, port numbers,
    library behaviour) MUST come from the RETRIEVED CONTEXT above.
-4. Cite the passage number, e.g. "According to [3]…" or "See [5]…".
+4. Citation rules:
+   - Curriculum passages are labelled [1], [2], …  → cite as "According to [2]…"
+   - Library/other passages are labelled [L1], [L2], … → cite as "See [L3]…"
+   - In the 📚 Curriculum Reference section use ONLY [N] numbers (not [LN]).
 5. If none of the retrieved passages are relevant, state that clearly
    before offering any general guidance.
 """
@@ -136,9 +144,22 @@ class AgenticTutor:
         self.enable_security = enable_security
         self._llm            = LLMInterface(provider=provider)
 
-    def analyse_code(self, student_code: str, question: str = "") -> str:
+    def analyse_code(self, student_code: str, question: str = "") -> dict:
         """
-        Analyse a student's C++ code and return a Socratic hint string.
+        Analyse a student's C++ code and return a dict with:
+            {
+                "response":       "<Socratic hint markdown>",
+                "lms_references": [
+                    {
+                        "title":     "Variables",
+                        "module":    5,
+                        "course":    "Self Driving Car",
+                        "course_id": "sdv",
+                        "content":   "<first 800 chars of the lesson>"
+                    },
+                    ...
+                ]
+            }
 
         Parameters
         ----------
@@ -150,23 +171,27 @@ class AgenticTutor:
         if self.enable_security:
             decision = classify_and_sanitize_student_input(student_code, question)
             if not decision["allowed"]:
-                return build_security_fallback("Prompt-injection risk detected")
+                fallback = build_security_fallback("Prompt-injection risk detected")
+                return {"response": fallback, "lms_references": []}
             student_code = decision["student_code"]
             question     = decision["question"]
 
-        context, _ = build_rag_context(
+        context, docs = build_rag_context(
             query=f"{student_code}\n{question}",
             retriever=self.retriever,
         )
+        lms_references = extract_lms_references(docs)
+
         user_prompt = format_user_prompt(student_code, context, question)
         response    = self._llm.chat(SOCRATIC_SYSTEM_PROMPT, user_prompt)
 
         if self.enable_security:
             check = validate_and_sanitize_model_output(response)
             if not check["safe"]:
-                return build_security_fallback("; ".join(check["issues"]))
+                fallback = build_security_fallback("; ".join(check["issues"]))
+                return {"response": fallback, "lms_references": []}
             response = check["response"]
 
         elapsed = (time.perf_counter() - t0) * 1000
         print(f"analyse_code latency: {elapsed:.0f} ms")
-        return response
+        return {"response": response, "lms_references": lms_references}

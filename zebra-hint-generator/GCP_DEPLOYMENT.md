@@ -21,7 +21,6 @@
   ```
   LMS/           ← parsed curriculum markdown files
   libraries.pdf  ← Z-Bot C++ library reference
-  M1.docx        ← common student mistakes taxonomy
   zebrabot/      ← (optional) ZebraBot firmware source files
   ```
 
@@ -92,7 +91,7 @@ gcloud projects add-iam-policy-binding zebra-ai-assist-poc \
 
 ```
 zebra-hint-generator/
-├── shared/                  ← Python package imported by both functions
+├── shared/                  ← Python package imported by both services
 │   ├── __init__.py
 │   ├── config.py            ← GCP constants, Secret Manager, Cloud SQL engine
 │   ├── data_loaders.py      ← GCS download + document loaders + chunking
@@ -101,17 +100,19 @@ zebra-hint-generator/
 │   ├── tutor.py             ← AgenticTutor, SOCRATIC_SYSTEM_PROMPT, prompt formatters
 │   └── security.py          ← input/output guardrails (kid safety)
 ├── build_rag/
-│   ├── main.py              ← Function A: rebuild the RAG database
+│   ├── main.py              ← Service A: rebuild the RAG database (Flask app)
+│   ├── Dockerfile
 │   └── requirements.txt
 ├── query_rag/
-│   ├── main.py              ← Function B: answer a student query
+│   ├── main.py              ← Service B: answer a student query (Flask app)
+│   ├── Dockerfile
 │   └── requirements.txt
 ├── deploy.sh                ← one-command deployment script
 └── GCP_DEPLOYMENT.md        ← this file
 ```
 
-The `deploy.sh` script copies `shared/` into each function directory
-before uploading, so Cloud Functions can import it as a local package.
+`deploy.sh` copies `shared/` into each service directory before running
+`gcloud run deploy --source`, so the container can import it as a local package.
 
 ---
 
@@ -120,7 +121,7 @@ before uploading, so Cloud Functions can import it as a local package.
 ```bash
 cd zebra-hint-generator
 
-# Deploy both functions
+# Deploy both services
 ./deploy.sh
 
 # Or individually
@@ -130,13 +131,13 @@ cd zebra-hint-generator
 
 ---
 
-## Function A — `build-rag-database`
+## Service A — `build-rag-database`
 
-**Trigger:** HTTP (authenticated, call manually when documents change)
+**Trigger:** HTTP POST `/` (authenticated — call manually when documents change)
 
 **What it does:**
 1. Fetches secrets from Secret Manager
-2. Downloads `LMS/`, `libraries.pdf`, `M1.docx` (and optionally `zebrabot/`) from GCS to `/tmp`
+2. Downloads `LMS/`, `libraries.pdf` (and optionally `zebrabot/`) from GCS to `/tmp`
 3. Loads + chunks all documents (~350 chunks)
 4. Drops and rebuilds the `zbot_chunks` PGVector collection
 5. Embeds all chunks with `gemini-embedding-2-preview`
@@ -144,10 +145,10 @@ cd zebra-hint-generator
 
 **Invoke after deploying:**
 ```bash
-# Get the function URL
-URL=$(gcloud functions describe build-rag-database \
-        --region=us-central1 --gen2 \
-        --format="value(serviceConfig.uri)")
+# Get the service URL
+URL=$(gcloud run services describe build-rag-database \
+        --region=us-central1 \
+        --format="value(status.url)")
 
 # Trigger with authentication
 curl -X POST "$URL" \
@@ -164,9 +165,9 @@ curl -X POST "$URL" \
 
 ---
 
-## Function B — `query-rag`
+## Service B — `query-rag`
 
-**Trigger:** HTTP (publicly accessible — protected by input security guardrails)
+**Trigger:** HTTP POST `/` (publicly accessible — protected by input security guardrails)
 
 **Request:**
 ```json
@@ -194,15 +195,32 @@ Omit `course_id` (or set it to `null`) to search the entire LMS.
 ```json
 {
   "response": "🔍 **Mistake Type**: Sensor read not stored...",
-  "provider": "OpenAI"
+  "provider": "OpenAI",
+  "lms_references": [
+    {
+      "ref":       2,
+      "title":     "Class 6: Coding Sensor",
+      "module":    7,
+      "course":    "Self Driving Car",
+      "course_id": "sdv",
+      "content":   "<first 800 chars of the lesson text>"
+    }
+  ]
 }
 ```
 
+`lms_references` contains one entry per unique LMS lesson page that was retrieved.
+The `ref` field matches the `[N]` citation number the model used in its response
+(e.g. `ref: 2` means the model wrote "According to [2]…"), so the front-end can
+link citations directly to lesson cards.
+Each entry's `content` field holds an 800-character preview of the lesson text so the
+front-end can display it inline (e.g. in a tooltip or modal) without a second request.
+
 **Example call:**
 ```bash
-URL=$(gcloud functions describe query-rag \
-        --region=us-central1 --gen2 \
-        --format="value(serviceConfig.uri)")
+URL=$(gcloud run services describe query-rag \
+        --region=us-central1 \
+        --format="value(status.url)")
 
 curl -X POST "$URL" \
   -H "Content-Type: application/json" \

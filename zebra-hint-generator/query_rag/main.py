@@ -1,12 +1,12 @@
 """
-Cloud Function B — query_rag
+Cloud Run service — query_rag
 
 Called at tutoring time by the front-end (or any HTTP client).
 Receives student C++ code + optional question, runs RAG retrieval against
 the pgvector collection, calls the LLM, and returns the Socratic hint.
 
 Deploy command (see deploy.sh):
-    gcloud functions deploy query-rag ...
+    gcloud run deploy query-rag --source query_rag/ ...
 
 Expected request body (JSON):
     {
@@ -21,8 +21,9 @@ Expected request body (JSON):
 
 Response body (JSON):
     {
-        "response":  "<Socratic hint markdown>",
-        "provider":  "OpenAI"
+        "response":       "<Socratic hint markdown>",
+        "provider":       "OpenAI",
+        "lms_references": [...]
     }
 """
 
@@ -31,7 +32,7 @@ import os
 import sys
 import traceback
 
-import functions_framework
+from flask import Flask, request
 
 sys.path.insert(0, ".")
 
@@ -39,8 +40,9 @@ from shared.config import COLLECTION_NAME, get_db_engine, get_secret
 from shared.rag_utils import get_retriever, get_vectorstore
 from shared.tutor import AgenticTutor
 
+app = Flask(__name__)
 
-# Module-level cache — vectorstore is reused across warm invocations.
+# Module-level cache — vectorstore is reused across warm container instances.
 # Retrievers are cheap to build and carry the course_id filter, so they
 # are created per request rather than cached.
 _engine      = None
@@ -61,23 +63,20 @@ def _get_vectorstore():
     return _vectorstore
 
 
-@functions_framework.http
-def query_rag(request):
+@app.route("/", methods=["OPTIONS", "POST"])
+def query_rag():
     """
     HTTP handler — returns a Socratic tutoring hint for the submitted code.
     """
     # ── CORS pre-flight ────────────────────────────────────────────────────
-    if request.method == "OPTIONS":
-        headers = {
-            "Access-Control-Allow-Origin":  "*",
-            "Access-Control-Allow-Methods": "POST",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Max-Age":       "3600",
-        }
-        return ("", 204, headers)
+    cors_headers = {
+        "Access-Control-Allow-Origin":  "*",
+        "Access-Control-Allow-Methods": "POST",
+        "Access-Control-Allow-Headers": "Content-Type",
+    }
 
-    cors_headers = {"Access-Control-Allow-Origin": "*",
-                    "Content-Type": "application/json"}
+    if request.method == "OPTIONS":
+        return ("", 204, {**cors_headers, "Access-Control-Max-Age": "3600"})
 
     try:
         body      = request.get_json(silent=True) or {}
@@ -90,7 +89,7 @@ def query_rag(request):
             return (
                 json.dumps({"error": "Missing 'code' field in request body."}),
                 400,
-                cors_headers,
+                {**cors_headers, "Content-Type": "application/json"},
             )
 
         vs        = _get_vectorstore()
@@ -100,12 +99,16 @@ def query_rag(request):
             retriever=retriever,
             enable_security=True,
         )
-        response = tutor.analyse_code(code, question)
+        result = tutor.analyse_code(code, question)
 
         return (
-            json.dumps({"response": response, "provider": provider}),
+            json.dumps({
+                "response":       result["response"],
+                "lms_references": result["lms_references"],
+                "provider":       provider,
+            }),
             200,
-            cors_headers,
+            {**cors_headers, "Content-Type": "application/json"},
         )
 
     except Exception as exc:
@@ -113,5 +116,10 @@ def query_rag(request):
         return (
             json.dumps({"error": str(exc)}),
             500,
-            cors_headers,
+            {**cors_headers, "Content-Type": "application/json"},
         )
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)

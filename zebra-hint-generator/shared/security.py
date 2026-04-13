@@ -128,7 +128,8 @@ def validate_and_sanitize_model_output(response: str) -> dict:
         if marker.lower() not in text.lower():
             issues.append(f"Missing expected section: {marker}")
 
-    if not re.search(r"\[\d+\]", text):
-        issues.append("No context citation found (e.g., [1]).")
+    # Curriculum passages are cited as [1], [2], …; library passages as [L1], [L2], …
+    if not re.search(r"\[L?\d+\]", text):
+        issues.append("No context citation found (e.g., [1] or [L1]).")
 
     return {"safe": len(issues) == 0, "issues": issues, "response": text}
