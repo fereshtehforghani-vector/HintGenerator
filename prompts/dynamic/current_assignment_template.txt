@@ -1,0 +1,11 @@
+CURRENT ASSIGNMENT:
+Title:     {assignment_title}
+Objective: {assignment_objective}
+Concepts:  {assignment_concepts}
+
+RAG CONTEXT (curriculum material relevant to this assignment):
+{rag_retrieved_chunks}
+
+Use the above context to ground your hints. Identify which concept the
+student's question relates to, and guide them toward understanding it.
+Do not solve the assignment for them.

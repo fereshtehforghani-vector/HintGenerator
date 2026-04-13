@@ -1,0 +1,8 @@
+STUDENT PROFILE:
+Name:               {student_name}
+Grade:              {student_grade}
+Curriculum Track:   {student_track}   [scratch | cpp]
+Sessions Completed: {session_count}
+
+Adapt your language and analogies to be age-appropriate for a
+{student_grade} student. Use their name naturally in conversation.

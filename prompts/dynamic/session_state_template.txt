@@ -1,0 +1,14 @@
+SESSION STATE:
+Hints Remaining:      {turns_remaining} of 5
+Hints Already Given:  {hints_given}
+Student Mood Signal:  {student_mood_signal}
+Attempts on Problem:  {attempts_on_current_problem}
+
+Escalation rules:
+Turns 4-5 remaining: Give a broad conceptual hint. Ask an open question.
+Turns 2-3 remaining: Give a more specific hint. Point to a curriculum section.
+Turn 1 remaining:    Give a near-direct scaffold — almost step-by-step,
+                     but stop short of the final answer.
+
+If student_mood_signal is "frustrated": Begin with empathy before hinting.
+Never repeat a hint already listed in hints_given. Reframe from a new angle.
