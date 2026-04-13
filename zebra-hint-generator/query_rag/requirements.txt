@@ -1,0 +1,13 @@
+functions-framework==3.*
+langchain>=0.3
+langchain-postgres
+langchain-openai
+langchain-google-genai
+langchain-community
+langchain-text-splitters
+google-genai>=1.0
+google-cloud-secret-manager
+cloud-sql-python-connector[pg8000]
+sqlalchemy
+pg8000
+numpy
