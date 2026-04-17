@@ -226,6 +226,7 @@ def extract_lms_references(docs: list[LCDoc]) -> list[dict]:
 
         refs.append({
             "ref":       i,
+            "source":    source,
             "title":     meta.get("title", Path(source).stem),
             "module":    module,
             "course":    meta.get("course", ""),

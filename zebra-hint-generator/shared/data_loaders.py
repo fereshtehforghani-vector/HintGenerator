@@ -19,7 +19,11 @@ from typing import Optional
 
 from langchain_core.documents import Document as LCDoc
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import (
+    Language,
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
 from docx import Document
 
 
@@ -171,13 +175,58 @@ def load_zebrabot_source(zebrabot_dir: Path) -> list[LCDoc]:
 
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
-def chunk_documents(docs: list[LCDoc],
-                    chunk_size: int = 800,
-                    chunk_overlap: int = 120) -> list[LCDoc]:
+def chunk_lms_docs(docs: list[LCDoc]) -> list[LCDoc]:
+    """
+    Split curriculum markdown files on header boundaries first, then apply a
+    secondary character split to keep each chunk within ~1000 chars.
+
+    Header metadata (h1/h2/h3) is merged into the chunk so the LLM receives
+    section context even when a chunk starts mid-section.
+    """
+    md_splitter = MarkdownHeaderTextSplitter(
+        headers_to_split_on=[("#", "h1"), ("##", "h2"), ("###", "h3")],
+        strip_headers=False,   # keep header text in the chunk content
+    )
+    # Secondary splitter for sections that exceed the size limit
+    fallback = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=120,
+    )
+
+    chunks: list[LCDoc] = []
+    for doc in docs:
+        for md_chunk in md_splitter.split_text(doc.page_content):
+            # Merge original metadata (source, course_id, type, …) with
+            # the header metadata added by MarkdownHeaderTextSplitter
+            merged = LCDoc(
+                page_content=md_chunk.page_content,
+                metadata={**doc.metadata, **md_chunk.metadata},
+            )
+            chunks.extend(fallback.split_documents([merged]))
+
+    print(f"  LMS chunks after markdown split: {len(chunks)}")
+    return chunks
+
+
+def chunk_library_docs(docs: list[LCDoc]) -> list[LCDoc]:
+    """Split library PDF pages with a standard recursive character splitter."""
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
+        chunk_size=800,
+        chunk_overlap=120,
         separators=["\n\n", "\n", " ", ""],
+    )
+    return splitter.split_documents(docs)
+
+
+def chunk_zebrabot_docs(docs: list[LCDoc]) -> list[LCDoc]:
+    """
+    Split ZebraBot C++ source using C++-aware separators so function and
+    class boundaries are preferred split points over arbitrary character counts.
+    """
+    splitter = RecursiveCharacterTextSplitter.from_language(
+        language=Language.CPP,
+        chunk_size=1000,
+        chunk_overlap=100,
     )
     return splitter.split_documents(docs)
 
@@ -189,14 +238,17 @@ def load_all_documents(
     mistakes_docx: Optional[Path] = None,
     zebrabot_dir: Optional[Path] = None,
 ) -> list[LCDoc]:
-    """Load, combine, and chunk all knowledge-base documents."""
-    raw: list[LCDoc] = []
-    raw += load_lms_docs(lms_dir)
-    raw += load_libraries_pdf(libraries_pdf)
+    """Load and chunk all knowledge-base documents, using a chunking strategy
+    appropriate for each document type."""
+    chunks: list[LCDoc] = []
+
+    chunks += chunk_lms_docs(load_lms_docs(lms_dir))
+    chunks += chunk_library_docs(load_libraries_pdf(libraries_pdf))
     if mistakes_docx:
-        raw += load_mistakes_docx(mistakes_docx)
+        # Mistake patterns are already split per section by the loader
+        chunks += load_mistakes_docx(mistakes_docx)
     if zebrabot_dir:
-        raw += load_zebrabot_source(zebrabot_dir)
-    chunked = chunk_documents(raw)
-    print(f"  Total: {len(raw)} raw docs → {len(chunked)} chunks")
-    return chunked
+        chunks += chunk_zebrabot_docs(load_zebrabot_source(zebrabot_dir))
+
+    print(f"  Total chunks: {len(chunks)}")
+    return chunks

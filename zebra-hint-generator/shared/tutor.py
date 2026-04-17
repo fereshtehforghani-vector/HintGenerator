@@ -195,3 +195,42 @@ class AgenticTutor:
         elapsed = (time.perf_counter() - t0) * 1000
         print(f"analyse_code latency: {elapsed:.0f} ms")
         return {"response": response, "lms_references": lms_references}
+
+    def analyse_image(self, image_bytes: bytes, question: str = "") -> dict:
+        """
+        Analyse an image of a student's Spike block-code program.
+
+        Retrieval uses the student's question as the query (image embedding
+        is not supported by gemini-embedding-2). Returns the same shape as
+        analyse_code: {"response", "lms_references"}.
+        """
+        t0 = time.perf_counter()
+
+        if self.enable_security:
+            decision = classify_and_sanitize_student_input("", question)
+            if not decision["allowed"]:
+                fallback = build_security_fallback("Prompt-injection risk detected")
+                return {"response": fallback, "lms_references": []}
+            question = decision["question"]
+
+        context, docs = build_rag_context(
+            query=question or "spike block code program",
+            retriever=self.retriever,
+        )
+        lms_references = extract_lms_references(docs)
+
+        user_prompt = format_image_prompt(context, question)
+        response    = self._llm.chat_with_image(
+            SOCRATIC_SYSTEM_PROMPT, user_prompt, image_bytes
+        )
+
+        if self.enable_security:
+            check = validate_and_sanitize_model_output(response)
+            if not check["safe"]:
+                fallback = build_security_fallback("; ".join(check["issues"]))
+                return {"response": fallback, "lms_references": []}
+            response = check["response"]
+
+        elapsed = (time.perf_counter() - t0) * 1000
+        print(f"analyse_image latency: {elapsed:.0f} ms")
+        return {"response": response, "lms_references": lms_references}
