@@ -5,10 +5,14 @@ Embedding model : gemini-embedding-2-preview  (3072-d)
 Vector store    : PGVector on Cloud SQL (langchain-postgres)
 """
 
+import mimetypes
 import os
+import re
 import time
+import urllib.parse
+import urllib.request
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from langchain_core.documents import Document as LCDoc
@@ -35,10 +39,22 @@ class GeminiEmbedding2(Embeddings):
         self._client = google_genai.Client(api_key=api_key)
         self._batch  = batch_size
 
+    def _call_with_retry(self, **kwargs):
+        """Call embed_content with exponential backoff on 429 RESOURCE_EXHAUSTED."""
+        from google.genai.errors import ClientError
+        delay = 2.0
+        for attempt in range(6):
+            try:
+                return self._client.models.embed_content(**kwargs)
+            except ClientError as e:
+                if getattr(e, "code", None) != 429 or attempt == 5:
+                    raise
+                print(f"  [429] backing off {delay:.1f}s (attempt {attempt + 1}/5)")
+                time.sleep(delay)
+                delay *= 2
+
     def _embed_batch(self, texts: List[str]) -> List[List[float]]:
-        result = self._client.models.embed_content(
-            model=self.MODEL, contents=texts
-        )
+        result = self._call_with_retry(model=self.MODEL, contents=texts)
         return [e.values for e in result.embeddings]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -46,11 +62,75 @@ class GeminiEmbedding2(Embeddings):
         for i in range(0, len(texts), self._batch):
             out.extend(self._embed_batch(texts[i : i + self._batch]))
             if i + self._batch < len(texts):
-                time.sleep(0.5)
+                time.sleep(1.0)
         return out
 
     def embed_query(self, text: str) -> List[float]:
         return self._embed_batch([text])[0]
+
+    def embed_images(self, urls: List[str]) -> List[Optional[List[float]]]:
+        """Embed images multimodally by URL.
+
+        Downloads each image and passes its raw bytes to gemini-embedding-2
+        as an image Part. Processed one at a time — the SDK's batching for
+        ``embed_content`` is text-oriented and mixing image parts into a
+        single request is unreliable.
+
+        Returns a list parallel to ``urls``. Entries are ``None`` for URLs
+        whose fetch failed (e.g. 403/404 on dead assets); the caller is
+        expected to filter these out. Fetch failures are logged but do not
+        abort the whole build.
+        """
+        from google.genai import types
+
+        out: List[Optional[List[float]]] = []
+        for url in urls:
+            try:
+                img_bytes, mime = _download_image(url)
+            except Exception as e:
+                print(f"  [skip image] {type(e).__name__}: {url}")
+                out.append(None)
+                continue
+            part = types.Part.from_bytes(data=img_bytes, mime_type=mime)
+            result = self._call_with_retry(
+                model=self.MODEL,
+                contents=types.Content(parts=[part]),
+            )
+            out.append(result.embeddings[0].values)
+            time.sleep(0.5)
+        return out
+
+
+_GCS_URL_RE = re.compile(
+    r"^https?://(?:storage\.cloud\.google\.com|storage\.googleapis\.com)/"
+    r"(?P<bucket>[^/]+)/(?P<object>.+)$"
+)
+
+
+def _download_image(url: str, timeout: int = 30) -> tuple[bytes, str]:
+    """Fetch an image URL and return (bytes, mime_type).
+
+    GCS URLs (``storage.cloud.google.com`` / ``storage.googleapis.com``) are
+    fetched through the authenticated ``google-cloud-storage`` client so
+    private curriculum buckets work. All other URLs use plain HTTP.
+    """
+    m = _GCS_URL_RE.match(url)
+    if m:
+        from google.cloud import storage
+        client = storage.Client()
+        bucket = client.bucket(m.group("bucket"))
+        blob   = bucket.blob(urllib.parse.unquote(m.group("object")))
+        data   = blob.download_as_bytes(timeout=timeout)
+        ctype  = blob.content_type or mimetypes.guess_type(url)[0] or "image/png"
+        return data, ctype
+
+    req = urllib.request.Request(url, headers={"User-Agent": "zebra-rag/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        data = resp.read()
+        ctype = resp.headers.get_content_type()
+    if not ctype or not ctype.startswith("image/"):
+        ctype = mimetypes.guess_type(url)[0] or "image/png"
+    return data, ctype
 
 
 # ── Vectorstore helpers ────────────────────────────────────────────────────────
@@ -95,6 +175,11 @@ def rebuild_vectorstore(docs: list[LCDoc], engine, collection_name: str) -> PGVe
     """
     Drop and recreate the PGVector collection, then index all documents.
     Called by the build_rag Cloud Function.
+
+    Text docs are embedded through the standard LangChain path. Image docs
+    (``metadata["is_image"] == True``) are embedded multimodally with
+    ``GeminiEmbedding2.embed_images`` and written via ``add_embeddings``
+    so the precomputed image vectors bypass the default text embedder.
     """
     embeddings = GeminiEmbedding2()
     vs = PGVector(
@@ -107,15 +192,48 @@ def rebuild_vectorstore(docs: list[LCDoc], engine, collection_name: str) -> PGVe
     vs.delete_collection()
     vs.create_collection()
 
-    BATCH = 20
-    for i in range(0, len(docs), BATCH):
-        batch = docs[i : i + BATCH]
-        vs.add_documents(batch)
-        done = min(i + BATCH, len(docs))
-        print(f"  Indexed {done}/{len(docs)} chunks", end="\r")
-        time.sleep(0.3)
+    text_docs  = [d for d in docs if not d.metadata.get("is_image")]
+    image_docs = [d for d in docs if d.metadata.get("is_image")]
 
-    print(f"\nCollection '{collection_name}' ready — {len(docs)} chunks.")
+    BATCH = 20
+    for i in range(0, len(text_docs), BATCH):
+        batch = text_docs[i : i + BATCH]
+        vs.add_documents(batch)
+        done = min(i + BATCH, len(text_docs))
+        print(f"  Indexed {done}/{len(text_docs)} text chunks", end="\r")
+        time.sleep(0.3)
+    if text_docs:
+        print()
+
+    indexed_images = 0
+    if image_docs:
+        print(f"Embedding {len(image_docs)} images...")
+        urls       = [d.metadata["image_url"] for d in image_docs]
+        image_vecs = embeddings.embed_images(urls)
+        # Drop entries whose fetch failed (embed_images returns None for those).
+        ok_texts, ok_vecs, ok_metas = [], [], []
+        for d, v in zip(image_docs, image_vecs):
+            if v is None:
+                continue
+            ok_texts.append(d.page_content)
+            ok_vecs.append(v)
+            ok_metas.append(d.metadata)
+        if ok_vecs:
+            vs.add_embeddings(
+                texts=ok_texts,
+                embeddings=ok_vecs,
+                metadatas=ok_metas,
+            )
+        indexed_images = len(ok_vecs)
+        skipped = len(image_docs) - indexed_images
+        msg = f"  Indexed {indexed_images} image chunks"
+        if skipped:
+            msg += f" ({skipped} skipped — unreachable URL)"
+        print(msg)
+
+    total = len(text_docs) + indexed_images
+    print(f"Collection '{collection_name}' ready — {total} chunks "
+          f"({len(text_docs)} text + {indexed_images} image).")
     return vs
 
 
@@ -185,8 +303,11 @@ def build_rag_context(
             lib_idx += 1
             citation = f"L{lib_idx}"
 
+        video_urls = doc.metadata.get("video_urls") or []
+        video_line = f"\nVideo URL(s): {', '.join(video_urls)}" if video_urls else ""
+
         context_parts.append(
-            f"[{citation}] {label} ({source})\n{snippet}\n{SEPARATOR}"
+            f"[{citation}] {label} ({source})\n{snippet}{video_line}\n{SEPARATOR}"
         )
 
     return "\n\n".join(context_parts), docs
@@ -225,13 +346,14 @@ def extract_lms_references(docs: list[LCDoc]) -> list[dict]:
             module = 0
 
         refs.append({
-            "ref":       i,
-            "source":    source,
-            "title":     meta.get("title", Path(source).stem),
-            "module":    module,
-            "course":    meta.get("course", ""),
-            "course_id": meta.get("course_id", ""),
-            "content":   doc.page_content[:800].strip(),
+            "ref":        i,
+            "source":     source,
+            "title":      meta.get("title", Path(source).stem),
+            "module":     module,
+            "course":     meta.get("course", ""),
+            "course_id":  meta.get("course_id", ""),
+            "content":    doc.page_content[:800].strip(),
+            "video_urls": list(meta.get("video_urls") or []),
         })
 
     return refs

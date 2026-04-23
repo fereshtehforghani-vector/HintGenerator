@@ -11,11 +11,14 @@ import os
 
 # ── GCP constants ──────────────────────────────────────────────────────────────
 GCP_PROJECT_ID          = "zebra-ai-assist-poc"
-INSTANCE_CONNECTION_NAME = "zebra-ai-assist-poc:us-central1:zebra-rag-db"
-DB_NAME                 = "ragdb"
-DB_USER                 = "postgres"
-BUCKET_NAME             = "zebra-rag-documents"
-COLLECTION_NAME         = "zbot_chunks"
+# Single Cloud SQL instance holds both pgvector tables and the
+# `conversation_history` table used by the legacy block-code tutor.
+INSTANCE_CONNECTION_NAME = "zebra-ai-assist-poc:us-central1:zebra-robotics-convo-history"
+DB_NAME                 = "zebra_db"
+DB_USER                 = "zebra_db_user"
+BUCKET_NAME             = "zebra-rag-documents"       # RAG source docs
+UPLOAD_BUCKET_NAME      = "zebra-robotics-images"     # student file uploads
+COLLECTION_NAME         = "zbot_rag_gcp"
 EMBEDDING_DIM           = 3072   # Gemini Embedding 2 output dimension
 
 

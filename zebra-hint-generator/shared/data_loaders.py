@@ -27,6 +27,82 @@ from langchain_text_splitters import (
 from docx import Document
 
 
+# ── LMS content cleaning & image extraction ───────────────────────────────────
+# Per-course filter for which `![alt](url)` images are worth embedding. Alt
+# text is matched case-insensitively and ignores trailing whitespace. Everything
+# else (decorative images like `![camel]`, `![truck]`, random screenshots) is
+# stripped along with all other links.
+_LMS_IMAGE_ALT_PATTERNS: dict[str, re.Pattern] = {
+    "sdv":              re.compile(r"^\s*image\s*$", re.IGNORECASE),
+    "reactive_robtics": re.compile(
+        r"^\s*(code|coding screen|mblox|myblock code)\s*$", re.IGNORECASE
+    ),
+}
+
+_MD_IMAGE_RE     = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+_MD_LINK_RE      = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)]+)\)")
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+_FRONTMATTER_RE  = re.compile(r"\A---\n(.*?)\n---\n?", re.DOTALL)
+
+# `[Video: Video](url)` lines in LMS markdown point at the flipbook / vimeo
+# asset for a section. Preserve them through cleaning+chunking as a
+# placeholder, then lift them into chunk metadata so the LLM can cite them.
+_VIDEO_LINK_RE        = re.compile(r"\[Video:\s*Video\]\((\S+?)\)")
+_VIDEO_PLACEHOLDER_RE = re.compile(r"\[\[VIDEO_URL::(.+?)\]\]")
+
+
+def _extract_image_docs(
+    body: str,
+    lesson_meta: dict,
+    course_id: str,
+) -> list[LCDoc]:
+    """Return one LCDoc per qualifying `![alt](url)` in the body.
+
+    The ``page_content`` is the alt text (not used for embedding — the image
+    bytes are embedded by ``GeminiEmbedding2.embed_images``). The image URL
+    is stored both as ``source`` so the front-end can link to it as a
+    reference, and as ``image_url`` to make the intent explicit.
+    """
+    pattern = _LMS_IMAGE_ALT_PATTERNS.get(course_id)
+    if not pattern:
+        return []
+    docs: list[LCDoc] = []
+    seen: set[str] = set()
+    for alt, url in _MD_IMAGE_RE.findall(body):
+        if not pattern.match(alt):
+            continue
+        if url in seen:
+            continue
+        seen.add(url)
+        meta = dict(lesson_meta)
+        meta.update({
+            "source":        url,
+            "image_url":     url,
+            "is_image":      True,
+            "modality":      "image",
+            "parent_source": lesson_meta.get("source", ""),
+            "alt":           alt.strip(),
+        })
+        docs.append(LCDoc(page_content=alt.strip() or "image", metadata=meta))
+    return docs
+
+
+def _clean_lms_body(body: str) -> str:
+    """Strip HTML comments and all markdown links/images from LMS text so
+    chunks contain only course material. `[Video: Video](url)` links are
+    rewritten to a `[[VIDEO_URL::url]]` placeholder that survives the
+    generic link strip; `chunk_lms_docs` lifts it into metadata."""
+    body = _HTML_COMMENT_RE.sub("", body)
+    body = _MD_IMAGE_RE.sub("", body)
+    body = _VIDEO_LINK_RE.sub(
+        lambda m: f"\n[[VIDEO_URL::{m.group(1).strip()}]]\n", body
+    )
+    body = _MD_LINK_RE.sub("", body)
+    # Collapse runs of blank lines produced by the removals.
+    body = re.sub(r"\n{3,}", "\n\n", body)
+    return body.strip()
+
+
 # ── GCS download ───────────────────────────────────────────────────────────────
 def download_gcs_documents(bucket_name: str, tmp_dir: str = "/tmp") -> dict[str, Path]:
     """
@@ -84,7 +160,7 @@ def download_gcs_documents(bucket_name: str, tmp_dir: str = "/tmp") -> dict[str,
 
 
 # ── Individual loaders ─────────────────────────────────────────────────────────
-def load_lms_docs(lms_dir: Path) -> list[LCDoc]:
+def load_lms_docs(lms_dir: Path, source_url_prefix: Optional[str] = None) -> list[LCDoc]:
     """Load all .md curriculum files from the LMS_PARSED directory.
 
     Each document gets a ``course_id`` metadata field derived from its
@@ -92,22 +168,61 @@ def load_lms_docs(lms_dir: Path) -> list[LCDoc]:
     (e.g. ``rag_output_sdv`` → ``sdv``).  This is the stable key used to
     filter the vector store at query time so that retrieval can be scoped
     to a single course.
+
+    If ``source_url_prefix`` is given, the ``source`` metadata becomes a
+    clickable URL built as ``{prefix}/{path_relative_to_lms_dir}`` — this is
+    how GCP runs turn ``/tmp/LMS/...`` into a ``storage.cloud.google.com``
+    link. When omitted, ``source`` falls back to the local filesystem path.
+
+    Returns a flat list of LCDocs containing:
+      * One *text* doc per lesson, with frontmatter, HTML comments, and all
+        markdown links/images stripped — leaving only course material.
+      * Zero or more *image* docs (``metadata["is_image"] == True``) for
+        images whose alt text matches the course's filter (see
+        ``_LMS_IMAGE_ALT_PATTERNS``). Image docs carry the image URL in
+        ``source`` / ``image_url`` so they can be embedded multimodally and
+        cited as clickable references at query time.
     """
-    docs = []
+    docs: list[LCDoc] = []
+    image_count = 0
+    prefix = source_url_prefix.rstrip("/") if source_url_prefix else None
     for md_file in sorted(lms_dir.rglob("*.md")):
         text = md_file.read_text(encoding="utf-8", errors="replace")
         # Strip the "rag_output_" prefix so the id is clean: "sdv", "reactive_robtics", etc.
         dir_name  = md_file.parent.name
         course_id = dir_name.removeprefix("rag_output_")
-        meta = {"source": str(md_file), "type": "curriculum", "course_id": course_id}
-        fm = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
+        if prefix:
+            rel    = md_file.relative_to(lms_dir).as_posix()
+            source = f"{prefix}/{rel}"
+        else:
+            source = str(md_file)
+        meta = {
+            "source":    source,
+            "type":      "curriculum",
+            "course_id": course_id,
+            "modality":  "text",
+        }
+
+        # Parse frontmatter into metadata and drop it from the body.
+        body = text
+        fm = _FRONTMATTER_RE.match(text)
         if fm:
             for line in fm.group(1).splitlines():
                 if ":" in line:
                     k, v = line.split(":", 1)
                     meta[k.strip()] = v.strip().strip('"')
-        docs.append(LCDoc(page_content=text, metadata=meta))
-    print(f"  LMS docs loaded: {len(docs)}")
+            body = text[fm.end():]
+
+        # Extract qualifying images BEFORE cleaning removes the markdown.
+        img_docs = _extract_image_docs(body, meta, course_id)
+        docs.extend(img_docs)
+        image_count += len(img_docs)
+
+        # Text chunk gets cleaned: no links, no HTML comments, no frontmatter.
+        cleaned = _clean_lms_body(body)
+        if cleaned:
+            docs.append(LCDoc(page_content=cleaned, metadata=meta))
+    print(f"  LMS docs loaded: {len(docs) - image_count} text + {image_count} image")
     return docs
 
 
@@ -115,7 +230,11 @@ def load_libraries_pdf(pdf_path: Path) -> list[LCDoc]:
     """Load the Z-Bot C++ library reference PDF."""
     pages = PyPDFLoader(str(pdf_path)).load()
     for p in pages:
-        p.metadata.update({"type": "library_reference", "source": str(pdf_path)})
+        p.metadata.update({
+            "type":     "library_reference",
+            "source":   str(pdf_path),
+            "modality": "text",
+        })
     print(f"  libraries.pdf pages loaded: {len(pages)}")
     return pages
 
@@ -133,7 +252,7 @@ def load_mistakes_docx(docx_path: Path) -> list[LCDoc]:
                 chunks.append(LCDoc(
                     page_content="\n".join(current_text),
                     metadata={"source": str(docx_path), "type": "mistake_pattern",
-                              "section": current_section},
+                              "section": current_section, "modality": "text"},
                 ))
             current_section, current_text = text, [text]
         else:
@@ -142,7 +261,7 @@ def load_mistakes_docx(docx_path: Path) -> list[LCDoc]:
         chunks.append(LCDoc(
             page_content="\n".join(current_text),
             metadata={"source": str(docx_path), "type": "mistake_pattern",
-                      "section": current_section},
+                      "section": current_section, "modality": "text"},
         ))
     print(f"  Mistakes docx chunks loaded: {len(chunks)}")
     return chunks
@@ -168,7 +287,8 @@ def load_zebrabot_source(zebrabot_dir: Path) -> list[LCDoc]:
             docs.append(LCDoc(
                 page_content=f"// FILE: {fpath.name}  (type: {doc_type})\n{code}",
                 metadata={"source": str(fpath), "type": doc_type,
-                          "filename": fpath.name, "project": "zebrabot_V18"},
+                          "filename": fpath.name, "project": "zebrabot_V18",
+                          "modality": "text"},
             ))
     print(f"  ZebraBot source files loaded: {len(docs)}")
     return docs
@@ -195,6 +315,11 @@ def chunk_lms_docs(docs: list[LCDoc]) -> list[LCDoc]:
 
     chunks: list[LCDoc] = []
     for doc in docs:
+        # Image docs are embedded as a single unit (the image itself) — don't
+        # run them through the text splitter.
+        if doc.metadata.get("is_image"):
+            chunks.append(doc)
+            continue
         for md_chunk in md_splitter.split_text(doc.page_content):
             # Merge original metadata (source, course_id, type, …) with
             # the header metadata added by MarkdownHeaderTextSplitter
@@ -202,7 +327,16 @@ def chunk_lms_docs(docs: list[LCDoc]) -> list[LCDoc]:
                 page_content=md_chunk.page_content,
                 metadata={**doc.metadata, **md_chunk.metadata},
             )
-            chunks.extend(fallback.split_documents([merged]))
+            for sub in fallback.split_documents([merged]):
+                urls = _VIDEO_PLACEHOLDER_RE.findall(sub.page_content)
+                if urls:
+                    seen: set[str] = set()
+                    sub.metadata["video_urls"] = [
+                        u for u in urls if not (u in seen or seen.add(u))
+                    ]
+                    sub.page_content = _VIDEO_PLACEHOLDER_RE.sub("", sub.page_content)
+                    sub.page_content = re.sub(r"\n{3,}", "\n\n", sub.page_content).strip()
+                chunks.append(sub)
 
     print(f"  LMS chunks after markdown split: {len(chunks)}")
     return chunks
@@ -237,12 +371,13 @@ def load_all_documents(
     libraries_pdf: Path,
     mistakes_docx: Optional[Path] = None,
     zebrabot_dir: Optional[Path] = None,
+    lms_source_url_prefix: Optional[str] = None,
 ) -> list[LCDoc]:
     """Load and chunk all knowledge-base documents, using a chunking strategy
     appropriate for each document type."""
     chunks: list[LCDoc] = []
 
-    chunks += chunk_lms_docs(load_lms_docs(lms_dir))
+    chunks += chunk_lms_docs(load_lms_docs(lms_dir, source_url_prefix=lms_source_url_prefix))
     chunks += chunk_library_docs(load_libraries_pdf(libraries_pdf))
     if mistakes_docx:
         # Mistake patterns are already split per section by the loader

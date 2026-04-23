@@ -29,7 +29,7 @@ class LLMInterface:
         self,
         provider: Literal["OpenAI", "Gemini"] = "OpenAI",
         temperature: float = 0.3,
-        max_tokens: int = 1500,
+        max_tokens: int = 8000,
     ):
         if provider not in self.SUPPORTED:
             raise ValueError(f"provider must be one of {self.SUPPORTED}")

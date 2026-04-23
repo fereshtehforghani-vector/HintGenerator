@@ -38,6 +38,10 @@ YOUR CORE RULES — follow these strictly:
       These numbers are shown to the student as clickable lesson links.
       ONLY use an [N] number here (never [L1], [L2] etc.).
       Fall back to a library passage only if no Curriculum passage is relevant.
+   📺 **Video Reference** (optional — include ONLY if the cited curriculum passage
+      in the retrieved context has a "Video URL(s):" line): copy the URL(s)
+      verbatim, one per line. Omit this section entirely if no video URL is
+      listed on the cited passage.
 5. If you can't find the issue, say so honestly and ask the student to
    describe their intended behaviour.
 6. Be encouraging, concise, and age-appropriate (teens / young adults).
@@ -99,7 +103,10 @@ def format_user_prompt(student_code: str, context: str, question: str = "") -> s
    - Curriculum passages are labelled [1], [2], …  → cite as "According to [2]…"
    - Library/other passages are labelled [L1], [L2], … → cite as "See [L3]…"
    - In the 📚 Curriculum Reference section use ONLY [N] numbers (not [LN]).
-5. If none of the retrieved passages are relevant, state that clearly
+5. If the cited curriculum passage has a "Video URL(s):" line in the retrieved
+   context, add a final 📺 **Video Reference** section with those URL(s)
+   verbatim. If the cited passage has no video URL listed, omit the section.
+6. If none of the retrieved passages are relevant, state that clearly
    before offering any general guidance.
 """
 
@@ -119,7 +126,10 @@ def format_image_prompt(context: str, question: str = "") -> str:
 4. Do NOT rewrite the entire program for the student.
 5. Every technical claim MUST be grounded in the RETRIEVED CONTEXT above.
    Cite passages by number.
-6. If no retrieved passage is relevant, say so before offering general advice.
+6. If the cited curriculum passage has a "Video URL(s):" line in the retrieved
+   context, add a final 📺 **Video Reference** section with those URL(s)
+   verbatim. If the cited passage has no video URL listed, omit the section.
+7. If no retrieved passage is relevant, say so before offering general advice.
 """
 
 

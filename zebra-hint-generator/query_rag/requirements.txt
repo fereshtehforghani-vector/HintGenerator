@@ -8,6 +8,8 @@ langchain-community
 langchain-text-splitters
 google-genai>=1.0
 google-cloud-secret-manager
+google-cloud-storage
+google-auth
 cloud-sql-python-connector[pg8000]
 sqlalchemy
 pg8000

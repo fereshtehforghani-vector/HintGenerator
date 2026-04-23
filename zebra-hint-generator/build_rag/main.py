@@ -54,10 +54,15 @@ def build_rag_database():
 
         # ── 3. Load + chunk ────────────────────────────────────────────────
         print("Loading and chunking documents...")
+        # LMS files under gcs_paths["lms_dir"] (= /tmp/LMS) mirror blobs under
+        # the bucket's "LMS/" prefix — turn the local path back into a GCS URL
+        # so the frontend can render clickable lesson links.
+        lms_url_prefix = f"https://storage.cloud.google.com/{BUCKET_NAME}/LMS"
         chunked_docs = load_all_documents(
-            lms_dir       = gcs_paths["lms_dir"],
-            libraries_pdf = gcs_paths["libraries_pdf"],
-            zebrabot_dir  = gcs_paths.get("zebrabot_dir"),
+            lms_dir               = gcs_paths["lms_dir"],
+            libraries_pdf         = gcs_paths["libraries_pdf"],
+            zebrabot_dir          = gcs_paths.get("zebrabot_dir"),
+            lms_source_url_prefix = lms_url_prefix,
         )
         print(f"  {len(chunked_docs)} chunks ready.")
 
