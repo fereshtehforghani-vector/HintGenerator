@@ -27,12 +27,13 @@ Response body (JSON):
     }
 """
 
+
 import json
 import os
 import sys
 import traceback
 
-from flask import Flask, request
+from flask import Flask, request, Response, stream_with_context
 
 sys.path.insert(0, ".")
 
@@ -44,7 +45,6 @@ from shared.tutor import AgenticTutor
 
 app = Flask(__name__)
 
-# Module-level cache — vectorstore and engine reused across warm instances.
 _engine      = None
 _vectorstore = None
 
@@ -69,19 +69,21 @@ def _parse_body():
     file_type, file_data, stored_file_url = process_file(request)
 
     if file_type is not None:
-        form = request.form
+        form      = request.form
         code      = str(form.get("code", "")).strip()
         question  = str(form.get("question", form.get("query", ""))).strip()
         provider  = str(form.get("provider", "OpenAI"))
         course_id = form.get("course_id") or None
         conv_id   = form.get("conversation_id") or None
     else:
-        body = request.get_json(silent=True) or {}
-        code      = str(body.get("code", "")).strip()
-        question  = str(body.get("question", body.get("query", ""))).strip()
-        provider  = str(body.get("provider", "OpenAI"))
-        course_id = body.get("course_id") or None
-        conv_id   = body.get("conversation_id") or None
+        # Check form data first, then fall back to JSON
+        body      = request.get_json(silent=True) or {}
+        code      = str(request.form.get("code", body.get("code", ""))).strip()
+        question  = str(request.form.get("question", request.form.get("query", 
+                        body.get("question", body.get("query", ""))))).strip()
+        provider  = str(request.form.get("provider", body.get("provider", "OpenAI")))
+        course_id = request.form.get("course_id") or body.get("course_id") or None
+        conv_id   = request.form.get("conversation_id") or body.get("conversation_id") or None
 
     return code, question, provider, course_id, conv_id, file_type, file_data, stored_file_url
 
@@ -91,7 +93,7 @@ def query_rag():
     cors_headers = {
         "Access-Control-Allow-Origin":  "*",
         "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
     }
     if request.method == "OPTIONS":
         return ("", 204, {**cors_headers, "Access-Control-Max-Age": "3600"})
@@ -100,13 +102,14 @@ def query_rag():
         (code, question, provider, course_id, conv_id,
          file_type, file_data, stored_file_url) = _parse_body()
 
-        # For .cpp uploads, the file payload *is* the code.
+        # For .cpp uploads, the file payload is the code
         if file_type == "cpp":
             code = file_data
 
-        if file_type != "image" and not code:
+        # Allow pure text queries with no code — just need a question
+        if file_type != "image" and not code and not question:
             return (
-                json.dumps({"error": "Provide either 'code' text or an uploaded file."}),
+                json.dumps({"error": "Provide a question, code, or an uploaded file."}),
                 400,
                 {**cors_headers, "Content-Type": "application/json"},
             )
@@ -116,7 +119,7 @@ def query_rag():
         tutor      = AgenticTutor(provider=provider, retriever=retriever, enable_security=True)
 
         if file_type == "image":
-            result     = tutor.analyse_image(file_data, question)
+            result     = tutor.analyse_image(file_data, question)  # file_data is bytes
             user_query = question or "[image submission]"
         else:
             result     = tutor.analyse_code(code, question)
@@ -131,19 +134,26 @@ def query_rag():
                 image_url=stored_file_url,
             )
         except Exception as log_err:
-            # Logging failure must not break the tutoring response.
             print(f"[warn] conversation_history insert failed: {log_err}")
 
-        return (
-            json.dumps({
-                "response":        result["response"],
-                "lms_references":  result["lms_references"],
-                "provider":        provider,
-                "conversation_id": conv_id,
-                "stored_file_url": stored_file_url,
-            }),
-            200,
-            {**cors_headers, "Content-Type": "application/json"},
+        # Stream the response back as plain text so test_frontend.py
+        # can display it word by word
+        response_text = result["response"]
+
+        def generate():
+            # Yield response in small chunks for streaming effect
+            chunk_size = 20
+            for i in range(0, len(response_text), chunk_size):
+                yield response_text[i:i + chunk_size]
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/plain",
+            headers={
+                **cors_headers,
+                "X-Conversation-ID": conv_id or "",
+                "X-LMS-References": json.dumps(result.get("lms_references", [])),
+            }
         )
 
     except Exception as exc:
