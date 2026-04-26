@@ -117,13 +117,21 @@ def download_gcs_documents(bucket_name: str, tmp_dir: str = "/tmp") -> dict[str,
     tmp     = Path(tmp_dir)
     paths: dict[str, Path] = {}
 
-    # Single files
-    for blob_name, label in [
-        ("libraries.pdf", "libraries_pdf"),
-        ("M1.docx",       "mistakes_docx"),
+    # Single files. libraries.pdf is required; M1.docx is optional — skip if
+    # the bucket doesn't carry it (current state) instead of failing the
+    # whole build on a 404.
+    for blob_name, label, required in [
+        ("libraries.pdf", "libraries_pdf", True),
+        ("M1.docx",       "mistakes_docx", False),
     ]:
+        blob = bucket.blob(blob_name)
+        if not blob.exists():
+            if required:
+                raise FileNotFoundError(f"Required blob gs://{bucket_name}/{blob_name} not found")
+            print(f"  Skipping optional blob (not in bucket): {blob_name}")
+            continue
         dest = tmp / blob_name
-        bucket.blob(blob_name).download_to_filename(str(dest))
+        blob.download_to_filename(str(dest))
         paths[label] = dest
         print(f"  Downloaded {blob_name} -> {dest}")
 

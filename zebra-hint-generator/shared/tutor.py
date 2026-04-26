@@ -1,15 +1,16 @@
 """
-ZebraBot Socratic tutor — core logic.
+ZebraBot Socratic tutor — core logic (v2).
 
-Contains:
-  - SOCRATIC_SYSTEM_PROMPT  (with kid-safety appendix)
-  - format_user_prompt / format_image_prompt
-  - AgenticTutor class
+Prompt architecture: modular categories loaded from prompt_config table.
+Static order:  ROLE → SOCRATIC_CONSTRAINT → SAFETY_AND_SCOPE → ENCOURAGEMENT_POLICY
+Dynamic:       STUDENT_PROFILE, CURRICULUM_TRACK_BEHAVIOR, SESSION_STATE
+RAG_CITATION_POLICY: excluded (work in progress)
 """
 
 import time
-from pathlib import Path
 from typing import Literal
+
+from sqlalchemy import text
 
 from shared.llm_interface import LLMInterface
 from shared.rag_utils import build_rag_context, extract_lms_references
@@ -20,71 +21,127 @@ from shared.security import (
     validate_and_sanitize_model_output,
 )
 
-# ── Socratic system prompt ─────────────────────────────────────────────────────
-SOCRATIC_SYSTEM_PROMPT = """You are "ZebraBot", a Socratic programming tutor for a Z-Bot
-robotics course using custom C++ libraries on an ESP32 board.
-
-YOUR CORE RULES — follow these strictly:
-─────────────────────────────────────────
-1. NEVER give the student the complete corrected code.
-2. Use the Socratic method: guide through questions and progressive hints.
-3. Always identify the TYPE of mistake first (e.g., "Syntax Error",
-   "Logic Error", "Library Misuse", "Missing Initialization").
-4. Structure every response in these sections:
-   🔍 **Mistake Type**: [category from taxonomy]
-   💡 **Hint 1** (gentle nudge — point to the area, NOT the fix)
-   🤔 **Guiding Question**: Ask the student a question that will lead them to discover the fix.
-   📚 **Curriculum Reference**: Cite a 📘 Curriculum passage using its [N] number (e.g. "[2]").
-      These numbers are shown to the student as clickable lesson links.
-      ONLY use an [N] number here (never [L1], [L2] etc.).
-      Fall back to a library passage only if no Curriculum passage is relevant.
-   📺 **Video Reference** (optional — include ONLY if the cited curriculum passage
-      in the retrieved context has a "Video URL(s):" line): copy the URL(s)
-      verbatim, one per line. Omit this section entirely if no video URL is
-      listed on the cited passage.
-5. If you can't find the issue, say so honestly and ask the student to
-   describe their intended behaviour.
-6. Be encouraging, concise, and age-appropriate (teens / young adults).
-7. For image inputs (Spike block code): describe what you see and identify
-   which block or connection looks problematic.
-
-GROUNDING RULES — these are critical for accuracy:
-──────────────────────────────────────────────────
-• ONLY use facts, function names, parameter details, and API behaviour that
-  appear in the RETRIEVED CONTEXT provided below.
-• When you mention a library function (e.g. begin(), getYaw(), read()),
-  describe it exactly as the context documents it — do not invent parameters,
-  return types, or behaviour.
-• Curriculum passages are numbered [1], [2], … and match the LMS lesson links shown to
-  the student.  Library/other passages are numbered [L1], [L2], …
-• Cite passages by their label, e.g. "According to [2] Curriculum…" or "See [L3] Library Docs…"
-• If the retrieved context does NOT contain enough information to explain
-  the issue, explicitly say: "The retrieved references do not cover this
-  specific topic — here is my best general guidance:" before giving any
-  advice that goes beyond the context.
-• NEVER fabricate library names, function signatures, port numbers, or
-  hardware details that are not in the context.
-
-COMMON MISTAKE TAXONOMY (use these labels when they match):
-- Missing begin() / initialization
-- Assignment in condition (= instead of ==)
-- Wrong port number
-- Variable not updated in loop
-- Infinite loop in setup()
-- Missing variable declaration
-- Incorrect library function call
-- Sensor read not stored in variable
-- Logic / control flow error
-- Missing semicolon / brace
-- Case sensitivity error
-- Unnecessary code block
-- Concept misunderstanding
-""" + "\n\n" + KID_SAFE_APPENDIX
+MAX_TURNS = 5
 
 
-# ── Prompt formatters ──────────────────────────────────────────────────────────
-def format_user_prompt(student_code: str, context: str, question: str = "") -> str:
+# ── DB loaders ─────────────────────────────────────────────────────────────────
+def load_prompt_config(engine, category: str) -> str:
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("""
+                SELECT content FROM prompt_config
+                WHERE policy_category = :cat AND is_active = true
+                ORDER BY version DESC LIMIT 1
+            """),
+            {"cat": category},
+        ).fetchone()
+    if row is None:
+        raise RuntimeError(f"No active prompt_config row for category '{category}'.")
+    return row[0]
+
+
+def load_static_prompts(engine) -> str:
+    """
+    Assemble static system prompt in prescribed order.
+    KID_SAFE_APPENDIX appended last.
+    RAG_CITATION_POLICY intentionally excluded (work in progress).
+    """
+    categories = [
+        "ROLE",
+        "SOCRATIC_CONSTRAINT",
+        "SAFETY_AND_SCOPE",
+        "ENCOURAGEMENT_POLICY",
+    ]
+    parts = [load_prompt_config(engine, cat) for cat in categories]
+    parts.append(KID_SAFE_APPENDIX)
+    return "\n\n".join(parts)
+
+
+def load_student_profile(engine, student_id: int) -> dict:
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("""
+                SELECT name, grade, track, session_count, turns_used
+                FROM students
+                WHERE student_id = :sid
+            """),
+            {"sid": student_id},
+        ).fetchone()
+    if row is None:
+        raise RuntimeError(f"No student found with student_id={student_id}.")
+    name, grade, track, session_count, turns_used = row
+    return {
+        "student_name":   name,
+        "student_grade":  grade,
+        "student_track":  track or "cpp",
+        "session_count":  session_count,
+        "turns_used":     turns_used,
+    }
+
+
+def increment_turns(engine, student_id: int) -> int:
+    """Increment turns_used and return the new value."""
+    with engine.begin() as conn:
+        row = conn.execute(
+            text("""
+                UPDATE students
+                SET turns_used = turns_used + 1
+                WHERE student_id = :sid
+                RETURNING turns_used
+            """),
+            {"sid": student_id},
+        ).fetchone()
+    return row[0]
+
+
+def reset_turns(engine, student_id: int) -> None:
+    """Call this when a student moves to a new problem."""
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE students SET turns_used = 0 WHERE student_id = :sid"),
+            {"sid": student_id},
+        )
+
+
+# ── Prompt assembly ────────────────────────────────────────────────────────────
+def format_system_prompt(engine, static_prompt: str, profile: dict) -> str:
+    track_behavior = load_prompt_config(
+        engine, f"CURRICULUM_TRACK_BEHAVIOR_{profile['student_track'].upper()}"
+    )
+    student_block = (
+        f"STUDENT PROFILE:\n"
+        f"Name:               {profile['student_name']}\n"
+        f"Grade:              {profile['student_grade']}\n"
+        f"Curriculum Track:   {profile['student_track']}\n"
+        f"Sessions Completed: {profile['session_count']}\n\n"
+        f"Adapt your language and analogies to be age-appropriate for a "
+        f"{profile['student_grade']} student. Use their name naturally in conversation."
+    )
+    return "\n\n".join([static_prompt, student_block, track_behavior])
+
+
+def format_user_prompt(
+    student_code: str,
+    context: str,
+    turns_used: int,
+    question: str = "",
+) -> str:
     q_section = f"\n\n**Student's question:** {question}" if question.strip() else ""
+    turns_remaining = MAX_TURNS - turns_used
+
+    if turns_remaining >= 4:
+        escalation = "Give a broad conceptual hint. Ask an open question."
+    elif turns_remaining >= 2:
+        escalation = "Give a more specific hint. Point to a curriculum section."
+    else:
+        escalation = "Give a near-direct scaffold — almost step-by-step, but stop short of the final answer."
+
+    session_block = (
+        f"SESSION STATE:\n"
+        f"Hints Remaining: {turns_remaining} of {MAX_TURNS}\n"
+        f"Escalation instruction: {escalation}"
+    )
+
     return f"""== STUDENT'S C++ CODE ==
 ```cpp
 {student_code.strip()}
@@ -97,22 +154,29 @@ def format_user_prompt(student_code: str, context: str, question: str = "") -> s
 ── INSTRUCTIONS ──────────────────────────────────────────────────────
 1. Analyse the code using the Socratic method.
 2. Identify the mistake type and provide a progressive hint — do NOT reveal the answer.
-3. Every technical claim you make (function names, parameters, port numbers,
-   library behaviour) MUST come from the RETRIEVED CONTEXT above.
+3. Every technical claim (function names, parameters, port numbers, library behaviour)
+   MUST come from the RETRIEVED CONTEXT above.
 4. Citation rules:
-   - Curriculum passages are labelled [1], [2], …  → cite as "According to [2]…"
-   - Library/other passages are labelled [L1], [L2], … → cite as "See [L3]…"
+   - Curriculum passages [1], [2], … → cite as "According to [2]…"
+   - Library passages [L1], [L2], …  → cite as "See [L3]…"
    - In the 📚 Curriculum Reference section use ONLY [N] numbers (not [LN]).
-5. If the cited curriculum passage has a "Video URL(s):" line in the retrieved
-   context, add a final 📺 **Video Reference** section with those URL(s)
-   verbatim. If the cited passage has no video URL listed, omit the section.
-6. If none of the retrieved passages are relevant, state that clearly
-   before offering any general guidance.
+5. If the cited passage has a "Video URL(s):" line, add a 📺 Video Reference section
+   with those URLs verbatim. Omit the section entirely if no video URL is listed.
+6. If no retrieved passages are relevant, state that before offering general guidance.
+
+{session_block}
 """
 
 
-def format_image_prompt(context: str, question: str = "") -> str:
+def format_image_prompt(context: str, turns_used: int, question: str = "") -> str:
     q_section = f"\n\n**Student's question:** {question}" if question.strip() else ""
+    turns_remaining = MAX_TURNS - turns_used
+
+    session_block = (
+        f"SESSION STATE:\n"
+        f"Hints Remaining: {turns_remaining} of {MAX_TURNS}"
+    )
+
     return f"""The image shows a student's Spike block-code program for a Z-Bot robot.
 {q_section}
 
@@ -124,12 +188,12 @@ def format_image_prompt(context: str, question: str = "") -> str:
 2. Identify any visual errors, missing blocks, or logic problems.
 3. Apply the Socratic method — give a hint and a guiding question.
 4. Do NOT rewrite the entire program for the student.
-5. Every technical claim MUST be grounded in the RETRIEVED CONTEXT above.
-   Cite passages by number.
-6. If the cited curriculum passage has a "Video URL(s):" line in the retrieved
-   context, add a final 📺 **Video Reference** section with those URL(s)
-   verbatim. If the cited passage has no video URL listed, omit the section.
+5. Every technical claim MUST be grounded in the RETRIEVED CONTEXT above. Cite by number.
+6. If the cited passage has a "Video URL(s):" line, add a 📺 Video Reference section.
+   Omit entirely if no video URL is listed.
 7. If no retrieved passage is relevant, say so before offering general advice.
+
+{session_block}
 """
 
 
@@ -138,109 +202,107 @@ class AgenticTutor:
     """
     Orchestrates RAG retrieval → prompt assembly → LLM call → security checks.
 
-    Designed for use inside a Cloud Function:
-      - No IPython / notebook dependencies
-      - display_output is always False (returns plain string)
-      - analyse_image is omitted from the GCP deployment (text-only for v1)
+    engine         : SQLAlchemy engine (same one used by RAG and conversation store)
+    student_id     : loaded from students table at construction time
+    provider       : 'OpenAI' | 'Gemini'
+    retriever      : RAG retriever instance
+    enable_security: run input/output security gates
     """
 
     def __init__(
         self,
+        engine,
+        student_id: int,
         provider: Literal["OpenAI", "Gemini"] = "OpenAI",
         retriever=None,
         enable_security: bool = True,
     ):
+        self._engine         = engine
+        self._student_id     = student_id
         self.retriever       = retriever
         self.enable_security = enable_security
         self._llm            = LLMInterface(provider=provider)
 
-    def analyse_code(self, student_code: str, question: str = "") -> dict:
-        """
-        Analyse a student's C++ code and return a dict with:
-            {
-                "response":       "<Socratic hint markdown>",
-                "lms_references": [
-                    {
-                        "title":     "Variables",
-                        "module":    5,
-                        "course":    "Self Driving Car",
-                        "course_id": "sdv",
-                        "content":   "<first 800 chars of the lesson>"
-                    },
-                    ...
-                ]
-            }
+        profile              = load_student_profile(engine, student_id)
+        self._turns_used     = profile["turns_used"]
+        static_prompt        = load_static_prompts(engine)
+        self._system_prompt  = format_system_prompt(engine, static_prompt, profile)
 
-        Parameters
-        ----------
-        student_code : the C++ code submitted by the student
-        question     : optional free-text question from the student
-        """
+    def _check_turn_limit(self) -> dict | None:
+        """Return a fallback dict if the student has used all their turns, else None."""
+        if self._turns_used >= MAX_TURNS:
+            return {
+                "response": (
+                    f"You've used all {MAX_TURNS} hints for this problem. "
+                    "Please ask your teacher for help, or try a fresh attempt "
+                    "on a new problem!"
+                ),
+                "lms_references": [],
+            }
+        return None
+
+    def analyse_code(self, student_code: str, question: str = "") -> dict:
+        limit = self._check_turn_limit()
+        if limit:
+            return limit
+
         t0 = time.perf_counter()
 
         if self.enable_security:
             decision = classify_and_sanitize_student_input(student_code, question)
             if not decision["allowed"]:
-                fallback = build_security_fallback("Prompt-injection risk detected")
-                return {"response": fallback, "lms_references": []}
+                return {"response": build_security_fallback("Prompt-injection risk detected"), "lms_references": []}
             student_code = decision["student_code"]
             question     = decision["question"]
 
-        context, docs = build_rag_context(
-            query=f"{student_code}\n{question}",
-            retriever=self.retriever,
+        context, docs  = build_rag_context(
+            query=f"{student_code}\n{question}", retriever=self.retriever
         )
         lms_references = extract_lms_references(docs)
+        user_prompt    = format_user_prompt(student_code, context, self._turns_used, question)
+        response       = self._llm.chat(self._system_prompt, user_prompt)
 
-        user_prompt = format_user_prompt(student_code, context, question)
-        response    = self._llm.chat(SOCRATIC_SYSTEM_PROMPT, user_prompt)
-
+        iresponse       = self._llm.chat(self._system_prompt, user_prompt)
         if self.enable_security:
+            print(f"RAW RESPONSE: {response[:500]}")
             check = validate_and_sanitize_model_output(response)
             if not check["safe"]:
-                fallback = build_security_fallback("; ".join(check["issues"]))
-                return {"response": fallback, "lms_references": []}
+                return {"response": build_security_fallback("; ".join(check["issues"])), "lms_references": []}
             response = check["response"]
+        self._turns_used = increment_turns(self._engine, self._student_id)
 
         elapsed = (time.perf_counter() - t0) * 1000
-        print(f"analyse_code latency: {elapsed:.0f} ms")
+        print(f"analyse_code latency: {elapsed:.0f} ms  |  turns_used: {self._turns_used}/{MAX_TURNS}")
         return {"response": response, "lms_references": lms_references}
 
     def analyse_image(self, image_bytes: bytes, question: str = "") -> dict:
-        """
-        Analyse an image of a student's Spike block-code program.
+        limit = self._check_turn_limit()
+        if limit:
+            return limit
 
-        Retrieval uses the student's question as the query (image embedding
-        is not supported by gemini-embedding-2). Returns the same shape as
-        analyse_code: {"response", "lms_references"}.
-        """
         t0 = time.perf_counter()
 
         if self.enable_security:
             decision = classify_and_sanitize_student_input("", question)
             if not decision["allowed"]:
-                fallback = build_security_fallback("Prompt-injection risk detected")
-                return {"response": fallback, "lms_references": []}
+                return {"response": build_security_fallback("Prompt-injection risk detected"), "lms_references": []}
             question = decision["question"]
 
-        context, docs = build_rag_context(
-            query=question or "spike block code program",
-            retriever=self.retriever,
+        context, docs  = build_rag_context(
+            query=question or "spike block code program", retriever=self.retriever
         )
         lms_references = extract_lms_references(docs)
-
-        user_prompt = format_image_prompt(context, question)
-        response    = self._llm.chat_with_image(
-            SOCRATIC_SYSTEM_PROMPT, user_prompt, image_bytes
-        )
+        image_prompt   = format_image_prompt(context, self._turns_used, question)
+        response       = self._llm.chat_with_image(self._system_prompt, image_prompt, image_bytes)
 
         if self.enable_security:
             check = validate_and_sanitize_model_output(response)
             if not check["safe"]:
-                fallback = build_security_fallback("; ".join(check["issues"]))
-                return {"response": fallback, "lms_references": []}
+                return {"response": build_security_fallback("; ".join(check["issues"])), "lms_references": []}
             response = check["response"]
 
+        self._turns_used = increment_turns(self._engine, self._student_id)
+
         elapsed = (time.perf_counter() - t0) * 1000
-        print(f"analyse_image latency: {elapsed:.0f} ms")
+        print(f"analyse_image latency: {elapsed:.0f} ms  |  turns_used: {self._turns_used}/{MAX_TURNS}")
         return {"response": response, "lms_references": lms_references}

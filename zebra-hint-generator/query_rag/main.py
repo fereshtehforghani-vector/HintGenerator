@@ -65,27 +65,28 @@ def _warm():
 
 def _parse_body():
     """Return (code, question, provider, course_id, conversation_id,
-    file_type, file_data, stored_file_url) from either JSON or multipart."""
+    student_id, file_type, file_data, stored_file_url) from either JSON or multipart."""
     file_type, file_data, stored_file_url = process_file(request)
 
     if file_type is not None:
-        form      = request.form
-        code      = str(form.get("code", "")).strip()
-        question  = str(form.get("question", form.get("query", ""))).strip()
-        provider  = str(form.get("provider", "OpenAI"))
-        course_id = form.get("course_id") or None
-        conv_id   = form.get("conversation_id") or None
+        form       = request.form
+        code       = str(form.get("code", "")).strip()
+        question   = str(form.get("question", form.get("query", ""))).strip()
+        provider   = str(form.get("provider", "OpenAI"))
+        student_id = int(form.get("student_id", 0))
+        course_id  = form.get("course_id") or None
+        conv_id    = form.get("conversation_id") or None
     else:
-        # Check form data first, then fall back to JSON
-        body      = request.get_json(silent=True) or {}
-        code      = str(request.form.get("code", body.get("code", ""))).strip()
-        question  = str(request.form.get("question", request.form.get("query", 
-                        body.get("question", body.get("query", ""))))).strip()
-        provider  = str(request.form.get("provider", body.get("provider", "OpenAI")))
-        course_id = request.form.get("course_id") or body.get("course_id") or None
-        conv_id   = request.form.get("conversation_id") or body.get("conversation_id") or None
+        body       = request.get_json(silent=True) or {}
+        code       = str(request.form.get("code", body.get("code", ""))).strip()
+        question   = str(request.form.get("question", request.form.get("query",
+                         body.get("question", body.get("query", ""))))).strip()
+        provider   = str(request.form.get("provider", body.get("provider", "OpenAI")))
+        student_id = int(request.form.get("student_id", body.get("student_id", 0)))
+        course_id  = request.form.get("course_id") or body.get("course_id") or None
+        conv_id    = request.form.get("conversation_id") or body.get("conversation_id") or None
 
-    return code, question, provider, course_id, conv_id, file_type, file_data, stored_file_url
+    return code, question, provider, course_id, conv_id, student_id, file_type, file_data, stored_file_url
 
 
 @app.route("/", methods=["OPTIONS", "POST"])
@@ -100,7 +101,7 @@ def query_rag():
 
     try:
         (code, question, provider, course_id, conv_id,
-         file_type, file_data, stored_file_url) = _parse_body()
+         student_id, file_type, file_data, stored_file_url) = _parse_body()
 
         # For .cpp uploads, the file payload is the code
         if file_type == "cpp":
@@ -116,7 +117,7 @@ def query_rag():
 
         engine, vs = _warm()
         retriever  = get_retriever(vs, top_k=10, course_id=course_id)
-        tutor      = AgenticTutor(provider=provider, retriever=retriever, enable_security=True)
+        tutor = AgenticTutor(engine=engine, student_id=student_id, provider=provider, retriever=retriever, enable_security=True)
 
         if file_type == "image":
             result     = tutor.analyse_image(file_data, question)  # file_data is bytes

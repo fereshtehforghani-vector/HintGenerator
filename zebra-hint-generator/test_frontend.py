@@ -2,6 +2,7 @@ import gradio as gr
 import requests
 import subprocess
 import os
+import random
 import re
 import sys
 import uuid
@@ -33,7 +34,7 @@ def get_auth_token():
     ).strip()
 
 # Once the user submits a message to the Gradio chatbot, this function is called. It takes in the user's message (which includes the query text and optionally a file) and the current chat display (which is a list of all previous messages in the conversation).
-def handle_request(message: dict, chat_display: list, conversation_id: str):
+def handle_request(message: dict, chat_display: list, conversation_id: str, student_id: int):
     try:
         query = message["text"]
         file = message["files"][0] if message["files"] else None
@@ -43,7 +44,8 @@ def handle_request(message: dict, chat_display: list, conversation_id: str):
         headers = {"Authorization": f"Bearer {token}"}
         data = {
             "query": query,
-            "conversation_id": conversation_id
+            "conversation_id": conversation_id,
+            "student_id": student_id,
         }
 
         # If the user attached a file, include it in the request to the Cloud Function.
@@ -80,7 +82,7 @@ def handle_request(message: dict, chat_display: list, conversation_id: str):
                 print(chunk, end="", flush=True)  # print each chunk to terminal as it arrives
                 accumulated += chunk  # build up the full response
                 chat_display[-1] = {"role": "assistant", "content": accumulated}  # update last message with new chunk
-                yield {"text": "", "files": []}, chat_display, chat_display, conversation_id  # yield updated display to Gradio
+                yield {"text": "", "files": []}, chat_display, chat_display, conversation_id, student_id  # yield updated display to Gradio
         print()  # print newline after full response is done
 
         # Append curriculum references parsed from the X-LMS-References header.
@@ -104,12 +106,12 @@ def handle_request(message: dict, chat_display: list, conversation_id: str):
                     viewable = _viewable_video_url(vid)
                     lines.append(f"    - 🎥 [Video {i}]({viewable})")
             chat_display[-1] = {"role": "assistant", "content": accumulated + "\n".join(lines)}
-            yield {"text": "", "files": []}, chat_display, chat_display, conversation_id
+            yield {"text": "", "files": []}, chat_display, chat_display, conversation_id, student_id
 
     except Exception as e:
         chat_display.append({"role": "user", "content": message["text"]})
         chat_display.append({"role": "assistant", "content": f"Error: {str(e)}"})
-        yield chat_display, chat_display, conversation_id  # yield instead of return for consistency
+        yield chat_display, chat_display, conversation_id, student_id  # yield instead of return for consistency
 
 
 # Use Gradio for the demo as the front end - TODO: change later
@@ -126,7 +128,8 @@ with gr.Blocks(css=CHATBOT_CSS) as demo:
     gr.Markdown("# 🤖 Zebra Robotics AI Tutor")
 
     chat_display = gr.State([])
-    conversation_id = gr.State(str(uuid.uuid4()))
+    conversation_id = gr.State()
+    student_id = gr.State()
 
     chatbot = gr.Chatbot(height=500, show_label=False, elem_id="tutor-chatbot")
 
@@ -136,10 +139,17 @@ with gr.Blocks(css=CHATBOT_CSS) as demo:
         show_label=False
     )
 
+    # Fresh student_id + conversation_id per browser session (each new tab).
+    # student_id range must match seeded rows in the `students` table.
+    demo.load(
+        fn=lambda: (str(uuid.uuid4()), random.randint(1, 5)),
+        outputs=[conversation_id, student_id],
+    )
+
     chat_input.submit(
         fn=handle_request,
-        inputs=[chat_input, chat_display, conversation_id],
-        outputs=[chat_input, chatbot, chat_display, conversation_id]
+        inputs=[chat_input, chat_display, conversation_id, student_id],
+        outputs=[chat_input, chatbot, chat_display, conversation_id, student_id]
     )
 
 if __name__ == "__main__":
