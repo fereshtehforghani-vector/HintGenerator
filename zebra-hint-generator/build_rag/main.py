@@ -41,12 +41,26 @@ def build_rag_database():
     body    = request.get_json(silent=True) or {}
     dry_run = bool(body.get("dry_run", False))
 
+    # Eventarc storage triggers can't filter by object path, so the trigger
+    # fires on every change in the bucket. Skip rebuilds for objects outside
+    # LMS/LMS_PARSED/ to avoid burning Gemini quota on irrelevant changes.
+    # Manual / dry-run requests have no `bucket` attribute and pass through.
+    event_bucket = request.headers.get("ce-bucket") or request.headers.get("Ce-Bucket")
+    event_object = request.headers.get("ce-subject", "").removeprefix("objects/")
+    if event_bucket and not event_object.startswith("LMS/LMS_PARSED/"):
+        msg = f"Skipping: event for {event_bucket}/{event_object} is outside LMS/LMS_PARSED/"
+        print(msg)
+        return app.response_class(
+            response=json.dumps({"status": "skipped", "reason": msg}),
+            status=200, mimetype="application/json",
+        )
+
     try:
         # ── 1. Load secrets ────────────────────────────────────────────────
         print("Loading secrets...")
         os.environ["GOOGLE_API_KEY"] = get_secret("GOOGLE_API_KEY")
         os.environ["OPENAI_API_KEY"] = get_secret("OPENAI_API_KEY")
-        db_password                  = get_secret("DB_PASSWORD")
+        db_password                  = get_secret("conversation_history_DB-PASSWORD")
 
         # ── 2. Download documents from GCS ─────────────────────────────────
         print(f"Downloading documents from gs://{BUCKET_NAME} ...")
@@ -64,6 +78,16 @@ def build_rag_database():
             zebrabot_dir          = gcs_paths.get("zebrabot_dir"),
             lms_source_url_prefix = lms_url_prefix,
         )
+
+        # load_libraries_pdf sets `source` to the local /tmp path. Rewrite to
+        # a clickable GCS URL so frontend reference links work for library
+        # chunks too. (LMS chunks already get GCS URLs via lms_source_url_prefix;
+        # LMS image chunks carry absolute CloudFront URLs already.)
+        libraries_url = f"https://storage.cloud.google.com/{BUCKET_NAME}/libraries.pdf"
+        for d in chunked_docs:
+            if d.metadata.get("type") == "library_reference":
+                d.metadata["source"] = libraries_url
+
         print(f"  {len(chunked_docs)} chunks ready.")
 
         if dry_run:
