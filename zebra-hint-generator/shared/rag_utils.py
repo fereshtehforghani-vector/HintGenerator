@@ -54,8 +54,14 @@ class GeminiEmbedding2(Embeddings):
                 delay *= 2
 
     def _embed_batch(self, texts: List[str]) -> List[List[float]]:
-        result = self._call_with_retry(model=self.MODEL, contents=texts)
-        return [e.values for e in result.embeddings]
+        # gemini-embedding-2-preview treats `contents=[t1, t2, ...]` as parts
+        # of one document and returns a single combined embedding. We must
+        # call embed_content once per text to get one embedding per text.
+        out: List[List[float]] = []
+        for text in texts:
+            result = self._call_with_retry(model=self.MODEL, contents=text)
+            out.append(result.embeddings[0].values)
+        return out
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         out = []
