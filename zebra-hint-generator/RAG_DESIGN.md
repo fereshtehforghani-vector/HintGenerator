@@ -158,7 +158,7 @@ list as-is so a single embedding represents the whole image
 ### 4.2 Library PDF — [`chunk_library_docs`](shared/data_loaders.py#L353-L360)
 
 `PyPDFLoader` produces one Document per page; then a generic
-`RecursiveCharacterTextSplitter` with `chunk_size=800`, `chunk_overlap=120`,
+`RecursiveCharacterTextSplitter` with `chunk_size=1000`, `chunk_overlap=120`,
 splitting preferentially on `\n\n`, then `\n`, then space, then character.
 
 ### 4.4 ZebraBot firmware — [`chunk_zebrabot_docs`](shared/data_loaders.py#L363-L373)
