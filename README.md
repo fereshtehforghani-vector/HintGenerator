@@ -5,8 +5,18 @@ student's code and question (or a screenshot / `.cpp` upload), retrieves
 relevant lessons from the curriculum via RAG, and returns a hint, a guiding
 question, and links back to the source material.
 
-The active codebase is **`zebra-hint-generator/`**. Older notebooks under
-`AI Pilot/` are experimental prototypes — not part of the deployment path.
+The active codebase is **`zebra-hint-generator/`**. Source material the build
+pipeline reads from GCS (parsed LMS markdown, library PDFs, firmware) lives
+under `AI Pilot/`.
+
+For deeper detail beyond this README:
+
+- [zebra-hint-generator/RAG_DESIGN.md](zebra-hint-generator/RAG_DESIGN.md) —
+  what actually happens inside the RAG pipeline (chunking, embedding,
+  retrieval, citation contract).
+- [zebra-hint-generator/DEMOS_README.md](zebra-hint-generator/DEMOS_README.md) —
+  how to run the `demo_build_rag.sh` and `demo_lms_upload.py` integration
+  demos against the deployed services.
 
 ---
 
@@ -74,18 +84,23 @@ zebra-hint-generator/
 │   ├── security.py            # Input/output guardrails
 │   └── tutor.py               # AgenticTutor — orchestrates retrieve + LLM
 ├── deploy.sh                  # Deploy build_rag and/or query_rag to Cloud Run
-├── test_local.py              # Developer tool — build + query against local Postgres
-├── demo_app.py                # Developer tool — local demo UI against local Postgres
-└── test_frontend.py           # Developer tool — Gradio chat UI for the deployed query-rag
+├── RAG_DESIGN.md              # Design doc — what the RAG pipeline does internally
+├── DEMOS_README.md            # How to run the build_rag integration demos
+├── demo_build_rag.sh          # Demo — POST the deployed build-rag-database end-to-end
+├── demo_lms_upload.py         # Demo — verify Eventarc auto-rebuild on LMS upload
+├── demo_show_db.py            # Demo helper — print pgvector collection stats
+├── test_frontend.py           # Developer tool — Gradio chat UI for the deployed query-rag
+└── test_frontend.sh           # Convenience wrapper that exports QUERY_RAG_URL and launches test_frontend.py
 ```
 
 `AI Pilot/` (sibling of `zebra-hint-generator/`) holds source material the
-build pipeline reads from GCS — markdown lessons, library PDFs, firmware.
+build pipeline reads from GCS — markdown lessons under
+`Vector_AI/LMS/LMS_PARSED/`, `libraries.pdf`, firmware source.
 
-The three files at the bottom of the tree are **developer-only utilities**
-for testing/exploration. They are **not** what gets deployed — they're
-helpers you run from your laptop. The production pipeline is `build_rag/`
-and `query_rag/`.
+The files at the bottom of the tree (`demo_*`, `test_frontend*`) are
+**developer-only utilities** for integration testing and demos. They are
+**not** what gets deployed — they're helpers you run from your laptop. The
+production pipeline is `build_rag/` and `query_rag/`.
 
 ---
 
@@ -98,13 +113,17 @@ and `query_rag/`.
   gcloud config set project zebra-ai-assist-poc
   ```
 - **Python 3.12+** (the deployed services use 3.12; local works on 3.13).
-- A virtualenv at the repo root with the dependencies from
-  `query_rag/requirements.txt` (covers everything the dev tools need too):
+- A virtualenv with the dependencies from the repo-root `requirements.txt`
+  (a slimmed-down superset that covers both services and the dev tools):
   ```bash
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install -r zebra-hint-generator/query_rag/requirements.txt
+  pip install -r requirements.txt
   ```
+  Each service also ships its own pinned `requirements.txt`
+  (`zebra-hint-generator/build_rag/requirements.txt`,
+  `zebra-hint-generator/query_rag/requirements.txt`) — those are what Cloud
+  Run actually builds against.
 
 ---
 
@@ -195,8 +214,11 @@ gcloud run services add-iam-policy-binding build-rag-database \
 
 ### Create the trigger
 
+The currently wired trigger is `build-rag-on-bucket-change` (referenced by
+`demo_lms_upload.py`). To recreate it from scratch:
+
 ```bash
-gcloud eventarc triggers create build-rag-on-bucket-update \
+gcloud eventarc triggers create build-rag-on-bucket-change \
   --location=us-central1 \
   --destination-run-service=build-rag-database \
   --destination-run-region=us-central1 \
@@ -256,13 +278,18 @@ is in `X-Conversation-ID`.
 
 ## Developer tools (not deployed)
 
-These run from your laptop and are useful for testing changes before deploying.
+These run from your laptop and are useful for exercising the deployed
+services end-to-end before/after a change. There is no unit-test framework
+in this repo — these scripts are hand-run integration demos.
 
 ### `test_frontend.py` — Gradio chat UI against the deployed query-rag
 
 A local web app (Gradio) that lets you chat with the deployed `query-rag`
-service end-to-end. It pulls a fresh identity token from gcloud on every
-request, so make sure you're logged in (`gcloud auth login`).
+service end-to-end, including the C++ code box for cpp-track students. It
+pulls a fresh identity token from gcloud on every request, so make sure
+you're logged in (`gcloud auth login`). The gcloud lookup uses
+`shutil.which("gcloud")`, so it works on macOS, Linux, and Windows
+(`gcloud.cmd`) without modification.
 
 To run it, set the deployed URL in your environment and launch:
 
@@ -275,27 +302,56 @@ python3 test_frontend.py
 # opens http://127.0.0.1:7860
 ```
 
-### `test_local.py` — full pipeline against a local Postgres
-
-Builds a local pgvector collection from `AI Pilot/` source files and runs a
-couple of test queries. Requires a local Postgres (`zbot_rag` DB on
-`localhost:5432`) with the `vector` extension enabled. See the constants at
-the top of the file to point it at your dev DB.
+Or just use the wrapper, which exports `QUERY_RAG_URL` for you and launches
+the script:
 
 ```bash
 cd zebra-hint-generator
-GOOGLE_API_KEY=... OPENAI_API_KEY=... python3 test_local.py
+./test_frontend.sh
 ```
 
-### `demo_app.py` — local demo UI
+### `demo_build_rag.sh` — integration demo for `build-rag-database`
 
-A standalone Flask UI that reads from the already-built local pgvector
-collection. Run after `test_local.py build` has populated the DB.
+Hits the deployed `build-rag-database` Cloud Run service end-to-end,
+verifies the pgvector collection state via `demo_show_db.py`, and
+optionally proves the Eventarc path-filter guard by uploading a file
+*outside* `LMS/LMS_PARSED/`. Supports `--dry-run` (no embedding spend) and
+`--with-eventarc`.
 
 ```bash
-GOOGLE_API_KEY=... OPENAI_API_KEY=... python3 demo_app.py
-# http://localhost:8080
+cd zebra-hint-generator
+./demo_build_rag.sh --dry-run                   # safe, no DB writes
+./demo_build_rag.sh                             # real rebuild — spends embedding quota
+./demo_build_rag.sh --dry-run --with-eventarc   # also tests path-filter guard
 ```
+
+### `demo_lms_upload.py` — verify the Eventarc auto-rebuild path
+
+Uploads a copy of an existing SDV lesson to
+`gs://zebra-rag-documents/LMS/LMS_PARSED/rag_output_sdv/...`, watches the
+Eventarc-triggered rebuild land in pgvector, and cleans up afterwards.
+
+```bash
+cd zebra-hint-generator
+python3 demo_lms_upload.py                       # default source + cleanup
+python3 demo_lms_upload.py --keep                # leave the demo file in GCS
+python3 demo_lms_upload.py --source 05_working_with_motors.md \
+                           --name   99_demo_motors_copy.md
+```
+
+### `demo_show_db.py` — print pgvector collection stats
+
+Stand-alone helper used by `demo_build_rag.sh` and runnable on its own to
+print collection name, total chunk count, breakdown by `type` and
+`course_id`, and the embedding dimension of a real row.
+
+```bash
+cd zebra-hint-generator
+python3 demo_show_db.py
+```
+
+See [zebra-hint-generator/DEMOS_README.md](zebra-hint-generator/DEMOS_README.md)
+for prerequisites, expected output, and failure-mode troubleshooting.
 
 ---
 
