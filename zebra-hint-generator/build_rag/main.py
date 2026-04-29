@@ -9,9 +9,11 @@ Deploy command (see deploy.sh):
     gcloud run deploy build-rag-database --source build_rag/ ...
 """
 
+import collections
 import json
 import os
 import sys
+import time
 import traceback
 
 from flask import Flask, request
@@ -28,6 +30,29 @@ from shared.data_loaders import download_gcs_documents, load_all_documents
 from shared.rag_utils import rebuild_vectorstore
 
 app = Flask(__name__)
+
+
+# Idempotency cache for CloudEvent ids. With max-instances=1 + concurrency=1
+# this in-memory map is enough: every redelivery of the same event lands on
+# the same instance until the instance idles out. TTL bounds memory.
+_SEEN_EVENT_IDS: "collections.OrderedDict[str, float]" = collections.OrderedDict()
+_SEEN_TTL_SECS = 1800  # 30 min — longer than any rebuild + Pub/Sub max backoff
+
+
+def _already_processed(event_id: str) -> bool:
+    """Return True if we've handled this CloudEvent id recently (and refresh
+    its timestamp). Trim stale entries on every call so the map stays small."""
+    now = time.time()
+    while _SEEN_EVENT_IDS:
+        oldest_id, oldest_ts = next(iter(_SEEN_EVENT_IDS.items()))
+        if now - oldest_ts <= _SEEN_TTL_SECS:
+            break
+        _SEEN_EVENT_IDS.popitem(last=False)
+    if event_id in _SEEN_EVENT_IDS:
+        _SEEN_EVENT_IDS[event_id] = now
+        return True
+    _SEEN_EVENT_IDS[event_id] = now
+    return False
 
 
 @app.route("/", methods=["POST"])
@@ -49,6 +74,18 @@ def build_rag_database():
     event_object = request.headers.get("ce-subject", "").removeprefix("objects/")
     if event_bucket and not event_object.startswith("LMS/LMS_PARSED/"):
         msg = f"Skipping: event for {event_bucket}/{event_object} is outside LMS/LMS_PARSED/"
+        print(msg)
+        return app.response_class(
+            response=json.dumps({"status": "skipped", "reason": msg}),
+            status=200, mimetype="application/json",
+        )
+
+    # Idempotency: Pub/Sub may redeliver a finalize event many times if a
+    # prior attempt was NACKed (e.g. 429 from concurrency=1). ACK fast on
+    # repeats so retries stop instead of triggering another full rebuild.
+    event_id = request.headers.get("ce-id") or request.headers.get("Ce-Id")
+    if event_id and _already_processed(event_id):
+        msg = f"Skipping: already processed CloudEvent ce-id={event_id}"
         print(msg)
         return app.response_class(
             response=json.dumps({"status": "skipped", "reason": msg}),
