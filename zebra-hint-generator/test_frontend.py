@@ -51,6 +51,13 @@ if not STUDENT_CHOICES:
 
 _VIMEO_PLAYER_RE = re.compile(r"https?://player\.vimeo\.com/video/(\d+)")
 _CITATION_RE = re.compile(r"\[(\d+)\]")
+# The image-flow prompt asks the LLM to omit the Video Reference section when
+# no video URL is listed, but it often emits a placeholder line instead. Strip
+# any "Video Reference:" line that doesn't actually contain a URL.
+_EMPTY_VIDEO_REF_RE = re.compile(
+    r"^[ \t]*\**\s*(?:🎥\s*)?Video\s+Reference\**\s*:\s*(?!.*https?://).*\n?",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def _viewable_video_url(url: str) -> str:
@@ -78,19 +85,71 @@ def _with_authuser(url: str) -> str:
 
 
 def _linkify_citations(text: str, refs: list[dict]) -> str:
-    """Turn inline [N] citations into clickable markdown links pointing at the
-    matching reference's source URL. [LN] library citations are left alone —
-    only curriculum refs carry URLs."""
-    ref_to_url = {r["ref"]: _with_authuser(r.get("source")) for r in refs if r.get("source")}
-    if not ref_to_url:
+    """Turn citations into clickable markdown links pointing at the matching
+    reference's source URL. Handles three forms the model emits:
+
+      * ``[N]`` numeric citations (used by the C++/text flow per system prompt).
+      * Bare filenames like ``03_control_blocks_loops.md`` (the image flow's
+        prompt only says "cite by number" so the LLM often falls back to the
+        source filename instead of [N]).
+      * Existing markdown links where the LLM hallucinated a URL — e.g.
+        ``[03_control_blocks_loops.md](#)``. We rewrite the URL whenever the
+        link text matches a known reference filename.
+
+    [LN] library citations are left alone — only curriculum refs carry URLs."""
+    if not refs:
         return text
 
-    def repl(m: re.Match) -> str:
+    ref_to_url = {r["ref"]: _with_authuser(r.get("source")) for r in refs if r.get("source")}
+    fname_to_url: dict[str, str] = {}
+    for r in refs:
+        raw_src = r.get("source") or ""
+        if not raw_src:
+            continue
+        fname = os.path.basename(urlparse(raw_src).path)
+        if fname:
+            fname_to_url[fname] = _with_authuser(raw_src)
+
+    # Pass 1: fix existing markdown links whose text is a known filename but
+    # whose URL is bogus (e.g. "#"). Run this before bare-filename matching so
+    # those filenames are no longer "bare" by the time pass 2 runs.
+    def repl_existing(m: re.Match) -> str:
+        link_text = m.group(1)
+        if link_text in fname_to_url:
+            return f"[{link_text}]({fname_to_url[link_text]})"
+        return m.group(0)
+
+    text = re.sub(r"\[([^\]]+)\]\(([^)]*)\)", repl_existing, text)
+
+    # Pass 1b: bracketed filename with no URL part — e.g. "[03_foo.md]". The
+    # negative lookahead skips ones already followed by "(" (those were
+    # handled by pass 1).
+    def repl_bracketed(m: re.Match) -> str:
+        link_text = m.group(1)
+        url = fname_to_url.get(link_text)
+        return f"[{link_text}]({url})" if url else m.group(0)
+
+    text = re.sub(r"\[([^\]]+)\](?!\()", repl_bracketed, text)
+
+    # Pass 2: [N] numeric citations.
+    def repl_num(m: re.Match) -> str:
         n = int(m.group(1))
         url = ref_to_url.get(n)
         return f"[\\[{n}\\]]({url})" if url else m.group(0)
 
-    return _CITATION_RE.sub(repl, text)
+    text = _CITATION_RE.sub(repl_num, text)
+
+    # Pass 3: bare filename mentions. Negative lookarounds skip filenames
+    # already inside a markdown link (so we don't double-wrap pass-1 results)
+    # or embedded in larger words/paths.
+    for fname, url in fname_to_url.items():
+        # Lookbehind also rejects `/` and `.` so we don't match a filename
+        # that is part of a URL path (e.g. inside a markdown link's URL —
+        # rewriting that would nest a link inside the link's URL and 404).
+        pattern = re.compile(r"(?<![\[(\w/.])" + re.escape(fname) + r"(?![\])\w/.])")
+        text = pattern.sub(f"[{fname}]({url})", text)
+
+    return text
 
 # TODO: Change my authentication token - ideally the user should be able to be authenticated from the front-end in their own way
 def get_auth_token():
@@ -175,6 +234,9 @@ def handle_request(message: dict, pasted_code: str, chat_display: list, conversa
             refs = json.loads(response.headers.get("X-LMS-References", "[]"))
         except Exception:
             refs = []
+        accumulated = _EMPTY_VIDEO_REF_RE.sub("", accumulated)
+        chat_display[-1] = {"role": "assistant", "content": accumulated}
+
         if refs:
             linked = _linkify_citations(accumulated, refs)
             lines = ["\n\n---\n**References**"]
