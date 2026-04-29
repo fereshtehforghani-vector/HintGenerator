@@ -17,8 +17,7 @@
 #   Step 1 → resolve the deployed Cloud Run service URL
 #   Step 2 → BEFORE: read-only inspection of the current pgvector contents
 #   Step 3 → POST to the service (real rebuild OR dry_run, per --dry-run flag)
-#   Step 4 → AFTER:  re-inspect to confirm the row count changed (real rebuild)
-#   Step 5 → (--with-eventarc) demo the LMS/LMS_PARSED/ path-filter guard
+#   Step 4 → (--with-eventarc) demo the LMS/LMS_PARSED/ path-filter guard
 #
 set -euo pipefail
 
@@ -150,25 +149,10 @@ RESPONSE=$(curl -sS --max-time "$CURL_TIMEOUT" -X POST "$URL" \
 echo
 green "  Response: $RESPONSE"
 
-# ── Step 4 · AFTER inspection (only on a real rebuild) ────────────────────────
-if [[ $DRY_RUN -eq 0 ]]; then
-  pause
-  step "Step 4 · DB AFTER — confirm the rebuild landed"
-  echo "  Re-running the read-only inspector. Compare 'Total chunks indexed'"
-  echo "  against the BEFORE snapshot in Step 2 — it should match the"
-  echo "  chunks_indexed count returned by Step 3."
-  echo
-  if "$VENV_PY" "$SCRIPT_DIR/demo_show_db.py"; then
-    green "  AFTER inspection complete."
-  else
-    yellow "  AFTER inspection failed (informational only — rebuild already returned success above)."
-  fi
-fi
-
-# ── Step 5 · (optional) Eventarc path-filter demo ─────────────────────────────
+# ── Step 4 · (optional) Eventarc path-filter demo ─────────────────────────────
 if [[ $WITH_EVENTARC -eq 1 ]]; then
   pause
-  step "Step 5 · Eventarc trigger guard — non-LMS upload"
+  step "Step 4 · Eventarc trigger guard — non-LMS upload"
   cat <<EOF
   We upload a junk file at:
       gs://$BUCKET/$SAFE_OBJECT
