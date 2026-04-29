@@ -1,5 +1,6 @@
 import gradio as gr
 import requests
+import shutil
 import subprocess
 import os
 import re
@@ -61,12 +62,20 @@ def _viewable_video_url(url: str) -> str:
 
 # TODO: Change my authentication token - ideally the user should be able to be authenticated from the front-end in their own way
 def get_auth_token():
+    # Resolve `gcloud` via PATH so this works on Windows (gcloud.cmd), macOS,
+    # and Linux without needing shell=True (which breaks list-args on Unix).
+    gcloud = shutil.which("gcloud")
+    if not gcloud:
+        sys.exit("gcloud CLI not found on PATH. Install the Google Cloud SDK "
+                 "and run `gcloud auth login` before starting this script.")
     result = subprocess.run(
-        ["gcloud", "auth", "print-identity-token"],
+        [gcloud, "auth", "print-identity-token"],
         text=True,
         capture_output=True,
-        shell=True 
     )
+    if result.returncode != 0 or not result.stdout.strip():
+        sys.exit(f"`gcloud auth print-identity-token` failed: "
+                 f"{result.stderr.strip() or 'empty token'}")
     return result.stdout.strip()
 
 # Once the user submits a message to the Gradio chatbot, this function is called. It takes in the user's message (which includes the query text and optionally a file), the pasted code (cpp-track only), and the current chat display.
