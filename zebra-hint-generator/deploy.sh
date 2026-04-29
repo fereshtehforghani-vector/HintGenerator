@@ -1,92 +1,121 @@
 #!/usr/bin/env bash
-# ============================================================
-# deploy.sh — Build and deploy both Cloud Run services to GCP
 #
-# Usage:
-#   ./deploy.sh               # deploy both services
-#   ./deploy.sh build_rag     # deploy only the build service
-#   ./deploy.sh query_rag     # deploy only the query service
-# ============================================================
+# Deploy both Cloud Run services for the Zebra hint generator.
+#
+#   ./deploy.sh                 # deploy both
+#   ./deploy.sh build_rag       # Service A only
+#   ./deploy.sh query_rag       # Service B only
+#
+# Requirements before first run:
+#   * gcloud CLI authenticated (`gcloud auth login`) and set to project
+#     zebra-ai-assist-poc (`gcloud config set project zebra-ai-assist-poc`).
+#   * Secrets GOOGLE_API_KEY, OPENAI_API_KEY, DB_PASSWORD exist in
+#     Secret Manager.
+#   * Cloud SQL instance zebra-robotics-convo-history exists and has the
+#     `vector` extension enabled inside database `conversation_history`.
+#   * Runtime service account (see SERVICE_ACCOUNT below) has the roles
+#     documented in CLAUDE.md.
+
 set -euo pipefail
 
+# ── Config ────────────────────────────────────────────────────────────────────
 PROJECT_ID="zebra-ai-assist-poc"
 REGION="us-central1"
-MEMORY_BUILD="2Gi"
-MEMORY_QUERY="1Gi"
-TIMEOUT_BUILD="3600"   # 1 hour — enough for a full RAG rebuild
-TIMEOUT_QUERY="60"
+INSTANCE="zebra-robotics-convo-history"
+INSTANCE_CONN="${PROJECT_ID}:${REGION}:${INSTANCE}"
+SERVICE_ACCOUNT="773402166266-compute@developer.gserviceaccount.com"
 
-gcloud config set project "$PROJECT_ID"
+SECRETS="GOOGLE_API_KEY=GOOGLE_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,DB_PASSWORD=conversation_history_DB-PASSWORD:latest"
 
-# ── Helper: copy shared/ into a service dir before building ─────────────────
-package_service() {
-    local svc_dir="$1"
-    echo "📦  Packaging $svc_dir ..."
-    cp -r shared/ "$svc_dir/shared"
-}
+# ── Helpers ───────────────────────────────────────────────────────────────────
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
-cleanup_service() {
-    local svc_dir="$1"
-    rm -rf "$svc_dir/shared"
-}
+red()    { printf "\033[31m%s\033[0m\n" "$*"; }
+yellow() { printf "\033[33m%s\033[0m\n" "$*"; }
+green()  { printf "\033[32m%s\033[0m\n" "$*"; }
 
-# ── Service A: build-rag-database ────────────────────────────────────────────
-deploy_build_rag() {
-    echo ""
-    echo "🚀  Deploying build-rag-database ..."
-    package_service build_rag
-
-    gcloud run deploy build-rag-database \
-        --source=build_rag/ \
-        --region="$REGION" \
-        --no-allow-unauthenticated \
-        --memory="$MEMORY_BUILD" \
-        --timeout="$TIMEOUT_BUILD" \
-        --set-env-vars="GCP_PROJECT=$PROJECT_ID"
-
-    cleanup_service build_rag
-    echo "✅  build-rag-database deployed."
-}
-
-# ── Service B: query-rag ─────────────────────────────────────────────────────
-deploy_query_rag() {
-    echo ""
-    echo "🚀  Deploying query-rag ..."
-    package_service query_rag
-
-    gcloud run deploy query-rag \
-        --source=query_rag/ \
-        --region="$REGION" \
-        --allow-unauthenticated \
-        --memory="$MEMORY_QUERY" \
-        --timeout="$TIMEOUT_QUERY" \
-        --set-env-vars="GCP_PROJECT=$PROJECT_ID"
-
-    cleanup_service query_rag
-    echo "✅  query-rag deployed."
-}
-
-# ── Main ─────────────────────────────────────────────────────────────────────
-TARGET="${1:-both}"
-
-case "$TARGET" in
-    build_rag) deploy_build_rag ;;
-    query_rag) deploy_query_rag ;;
-    both)
-        deploy_build_rag
-        deploy_query_rag
-        ;;
+check_cloud_sql_tier() {
+  local tier
+  tier=$(gcloud sql instances describe "$INSTANCE" \
+           --project="$PROJECT_ID" \
+           --format="value(settings.tier)" 2>/dev/null || echo "")
+  if [[ -z "$tier" ]]; then
+    red "ERROR: Cloud SQL instance '$INSTANCE' not found in project $PROJECT_ID."
+    exit 1
+  fi
+  case "$tier" in
+    db-f1-micro|db-g1-small)
+      red "ERROR: Cloud SQL tier '$tier' is too small for pgvector at 3072-d."
+      red "       Bump to at least db-custom-1-3840 before deploying."
+      exit 1
+      ;;
     *)
-        echo "Unknown target: $TARGET  (use build_rag | query_rag | both)"
-        exit 1
-        ;;
+      green "Cloud SQL tier: $tier — OK."
+      ;;
+  esac
+}
+
+copy_shared_into() {
+  local svc="$1"
+  rm -rf "${svc}/shared"
+  cp -R shared "${svc}/shared"
+}
+
+cleanup_shared() {
+  rm -rf build_rag/shared query_rag/shared
+}
+trap cleanup_shared EXIT
+
+deploy_build_rag() {
+  yellow "── Deploying build-rag-database ──"
+  copy_shared_into build_rag
+  gcloud run deploy build-rag-database \
+    --project="$PROJECT_ID" \
+    --region="$REGION" \
+    --source=build_rag \
+    --service-account="$SERVICE_ACCOUNT" \
+    --add-cloudsql-instances="$INSTANCE_CONN" \
+    --set-secrets="$SECRETS" \
+    --no-allow-unauthenticated \
+    --memory=4Gi \
+    --cpu=2 \
+    --timeout=3600 \
+    --max-instances=1
+  green "build-rag-database deployed."
+}
+
+deploy_query_rag() {
+  yellow "── Deploying query-rag ──"
+  copy_shared_into query_rag
+  gcloud run deploy query-rag \
+    --project="$PROJECT_ID" \
+    --region="$REGION" \
+    --source=query_rag \
+    --service-account="$SERVICE_ACCOUNT" \
+    --add-cloudsql-instances="$INSTANCE_CONN" \
+    --set-secrets="$SECRETS" \
+    --allow-unauthenticated \
+    --memory=2Gi \
+    --cpu=2 \
+    --min-instances=1 \
+    --timeout=120
+  green "query-rag deployed."
+}
+
+# ── Run ───────────────────────────────────────────────────────────────────────
+target="${1:-both}"
+
+check_cloud_sql_tier
+
+case "$target" in
+  build_rag) deploy_build_rag ;;
+  query_rag) deploy_query_rag ;;
+  both)      deploy_build_rag; deploy_query_rag ;;
+  *)
+    red "Unknown target '$target'. Use build_rag | query_rag | both."
+    exit 1
+    ;;
 esac
 
-echo ""
-echo "Service URLs:"
-gcloud run services describe build-rag-database --region="$REGION" \
-    --format="value(status.url)" 2>/dev/null | \
-    xargs -I{} echo "  build-rag-database : {}" || true
-gcloud run services describe query-rag --region="$REGION" \
-    --format="value(status.url)" 2>/dev/null | \
-    xargs -I{} echo "  query-rag          : {}" || true
+green "Done."

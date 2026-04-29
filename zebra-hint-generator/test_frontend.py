@@ -2,17 +2,45 @@ import gradio as gr
 import requests
 import subprocess
 import os
-import random
 import re
 import sys
 import uuid
 import json
+
+from sqlalchemy import text
+
+from shared.config import get_db_engine, get_secret
 
 
 QUERY_RAG_URL = os.environ.get("QUERY_RAG_URL")
 if not QUERY_RAG_URL:
     sys.exit("QUERY_RAG_URL is not set. Run via test_frontend.sh, or export "
              "QUERY_RAG_URL=https://<your-cloud-run-host> before running.")
+
+
+def fetch_students() -> list[tuple[str, int]]:
+    """Pull (label, student_id) pairs from the Cloud SQL `students` table so the
+    dropdown reflects whoever is actually seeded. Requires gcloud auth with
+    Secret Manager + Cloud SQL access."""
+    engine = get_db_engine(get_secret("conversation_history_DB-PASSWORD"))
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT student_id, name, grade, track FROM students ORDER BY student_id")
+        ).fetchall()
+    choices = []
+    for sid, name, grade, track in rows:
+        bits = [str(name or f"student {sid}")]
+        if grade:
+            bits.append(f"grade {grade}")
+        if track:
+            bits.append(track)
+        choices.append((f"{' • '.join(bits)} (id={sid})", sid))
+    return choices
+
+
+STUDENT_CHOICES = fetch_students()
+if not STUDENT_CHOICES:
+    sys.exit("No rows found in `students` table — seed it before running the demo.")
 
 
 _VIMEO_PLAYER_RE = re.compile(r"https?://player\.vimeo\.com/video/(\d+)")
@@ -129,7 +157,13 @@ with gr.Blocks(css=CHATBOT_CSS) as demo:
 
     chat_display = gr.State([])
     conversation_id = gr.State()
-    student_id = gr.State()
+
+    student_id = gr.Dropdown(
+        choices=STUDENT_CHOICES,
+        value=STUDENT_CHOICES[0][1],
+        label="Pretend to be student",
+        interactive=True,
+    )
 
     chatbot = gr.Chatbot(height=500, show_label=False, elem_id="tutor-chatbot")
 
@@ -139,11 +173,12 @@ with gr.Blocks(css=CHATBOT_CSS) as demo:
         show_label=False
     )
 
-    # Fresh student_id + conversation_id per browser session (each new tab).
-    # student_id range must match seeded rows in the `students` table.
+    # Fresh conversation_id per browser session (each new tab). The selected
+    # student_id comes from the dropdown above, populated from the `students`
+    # table at startup.
     demo.load(
-        fn=lambda: (str(uuid.uuid4()), random.randint(1, 5)),
-        outputs=[conversation_id, student_id],
+        fn=lambda: str(uuid.uuid4()),
+        outputs=[conversation_id],
     )
 
     chat_input.submit(
