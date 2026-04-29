@@ -117,18 +117,17 @@ def query_rag():
             ).fetchone()
         track = ((row[0] if row else None) or "cpp").lower()
 
-        if track == "cpp" and not code:
-            return (
-                "Please paste your C++ code or attach a .cpp file.",
-                400,
-                {**cors_headers, "Content-Type": "text/plain"},
+        # Reject only when the student has sent nothing actionable. A bare
+        # question (no code, no file) now routes to analyse_text instead of
+        # being rejected — that path uses a non-Socratic system prompt so
+        # casual messages like "hello" don't get the four-section template.
+        if not (code or file_type or question):
+            msg = (
+                "Please paste your C++ code, attach a .cpp file, or ask a question."
+                if track == "cpp"
+                else "Please attach your image file or ask a question."
             )
-        if track == "scratch" and file_type != "image":
-            return (
-                "Please attach your image file.",
-                400,
-                {**cors_headers, "Content-Type": "text/plain"},
-            )
+            return (msg, 400, {**cors_headers, "Content-Type": "text/plain"})
 
         retriever  = get_retriever(vs, top_k=10, course_id=course_id)
         tutor = AgenticTutor(engine=engine, student_id=student_id, conversation_id=conv_id, provider=provider, retriever=retriever, enable_security=True)
@@ -136,9 +135,12 @@ def query_rag():
         if file_type == "image":
             result     = tutor.analyse_image(file_data, question)  # file_data is bytes
             user_query = question or "[image submission]"
-        else:
+        elif code:
             result     = tutor.analyse_code(code, question)
             user_query = f"{question}\n\n{code}".strip() if question else code
+        else:
+            result     = tutor.analyse_text(question)
+            user_query = question
 
         try:
             save_conversation_turn(

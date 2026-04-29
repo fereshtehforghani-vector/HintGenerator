@@ -135,8 +135,13 @@ def download_gcs_documents(bucket_name: str, tmp_dir: str = "/tmp") -> dict[str,
         paths[label] = dest
         print(f"  Downloaded {blob_name} -> {dest}")
 
-    # LMS folder (all .md files under LMS/)
+    # LMS folder (all .md files under LMS/).
+    # Clear first — Cloud Run's /tmp is tmpfs that persists across invocations
+    # on the same warm instance. Without rmtree, files removed from the bucket
+    # would keep being indexed from the leftover local copy.
+    import shutil
     lms_dir = tmp / "LMS"
+    shutil.rmtree(lms_dir, ignore_errors=True)
     lms_dir.mkdir(exist_ok=True)
     for blob in client.list_blobs(bucket_name, prefix="LMS/"):
         if blob.name.endswith("/"):
@@ -148,8 +153,10 @@ def download_gcs_documents(bucket_name: str, tmp_dir: str = "/tmp") -> dict[str,
     paths["lms_dir"] = lms_dir
     print(f"  Downloaded LMS/ -> {lms_dir}")
 
-    # ZebraBot firmware (optional — only if present in bucket)
+    # ZebraBot firmware (optional — only if present in bucket).
+    # Same reset-before-download as LMS for the same reason.
     zebrabot_dir = tmp / "zebrabot"
+    shutil.rmtree(zebrabot_dir, ignore_errors=True)
     zebrabot_dir.mkdir(exist_ok=True)
     blobs_found = 0
     for blob in client.list_blobs(bucket_name, prefix="zebrabot/"):

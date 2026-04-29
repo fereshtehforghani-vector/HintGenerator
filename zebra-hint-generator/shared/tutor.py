@@ -59,6 +59,17 @@ def load_static_prompts(engine) -> str:
     return "\n\n".join(parts)
 
 
+def load_chitchat_static_prompts(engine) -> str:
+    """System prompt for the no-code conversational path.
+    SOCRATIC_CONSTRAINT is intentionally omitted so the model isn't bound
+    to the Mistake Type / Hint / Guiding Question / Curriculum Reference
+    four-section template (which only makes sense when reviewing code)."""
+    categories = ["ROLE", "SAFETY_AND_SCOPE", "ENCOURAGEMENT_POLICY"]
+    parts = [load_prompt_config(engine, cat) for cat in categories]
+    parts.append(KID_SAFE_APPENDIX)
+    return "\n\n".join(parts)
+
+
 def load_student_profile(engine, student_id: int) -> dict:
     with engine.connect() as conn:
         row = conn.execute(
@@ -158,6 +169,42 @@ def format_user_prompt(
 """
 
 
+def format_text_prompt(question: str, context: str, turns_used: int) -> str:
+    """User prompt for the no-code conversational path. Explicitly forbids
+    the four-section template so even if the model has seen that pattern in
+    its history, it falls back to a plain reply."""
+    turns_remaining = MAX_TURNS - turns_used
+    session_block = (
+        f"SESSION STATE:\n"
+        f"Hints Remaining: {turns_remaining} of {MAX_TURNS}"
+    )
+    return f"""The student has sent a message but has NOT shared any code or screenshot.
+
+== STUDENT'S MESSAGE ==
+{question.strip()}
+
+== RETRIEVED CONTEXT (use ONLY if directly relevant to the student's message) ==
+{context}
+
+── INSTRUCTIONS ──────────────────────────────────────────────────────
+1. Reply conversationally. Do NOT use the "Mistake Type / Hint / Guiding
+   Question / Curriculum Reference" four-section template — that format is
+   only for reviewing code or images.
+2. If the student is greeting or chatting, greet them back warmly (use
+   their name if known) and invite them to share code, a screenshot, or a
+   curriculum question.
+3. If the student is asking a conceptual curriculum question, answer
+   Socratically — give a hint and a guiding question. Cite a passage with
+   [N] only if it is directly relevant; otherwise do not cite anything.
+4. If the student is asking for a direct solution to an assignment,
+   politely decline and ask them to share their code or screenshot first.
+5. Stay on-topic for the curriculum track; redirect off-topic chatter
+   gently.
+
+{session_block}
+"""
+
+
 def format_image_prompt(context: str, turns_used: int, question: str = "") -> str:
     q_section = f"\n\n**Student's question:** {question}" if question.strip() else ""
     turns_remaining = MAX_TURNS - turns_used
@@ -216,9 +263,12 @@ class AgenticTutor:
         self.enable_security  = enable_security
         self._llm             = LLMInterface(provider=provider)
 
-        profile             = load_student_profile(engine, student_id)
-        static_prompt       = load_static_prompts(engine)
-        self._system_prompt = format_system_prompt(engine, static_prompt, profile)
+        self._profile        = load_student_profile(engine, student_id)
+        static_prompt        = load_static_prompts(engine)
+        self._system_prompt  = format_system_prompt(engine, static_prompt, self._profile)
+        # Built lazily by analyse_text() — keeps requests that never hit the
+        # chitchat path from paying the extra prompt_config queries.
+        self._chitchat_system_prompt: str | None = None
 
     def _check_turn_limit(self) -> dict | None:
         """
@@ -270,6 +320,42 @@ class AgenticTutor:
         elapsed = (time.perf_counter() - t0) * 1000
         print(f"analyse_code latency: {elapsed:.0f} ms")
         return {"response": response, "lms_references": lms_references}
+
+    def analyse_text(self, question: str) -> dict:
+        """Conversational path used when the student sends a message with no
+        code and no image. Uses a system prompt that omits SOCRATIC_CONSTRAINT
+        so the response isn't forced into the four-section template."""
+        limit = self._check_turn_limit()
+        if limit:
+            return limit
+
+        t0 = time.perf_counter()
+
+        if self.enable_security:
+            decision = classify_and_sanitize_student_input("", question)
+            if not decision["allowed"]:
+                return {"response": build_security_fallback("Prompt-injection risk detected"), "lms_references": []}
+            question = decision["question"]
+
+        if self._chitchat_system_prompt is None:
+            chitchat_static = load_chitchat_static_prompts(self._engine)
+            self._chitchat_system_prompt = format_system_prompt(
+                self._engine, chitchat_static, self._profile
+            )
+
+        context, _docs = build_rag_context(query=question, retriever=self.retriever)
+
+        turns_used  = get_conversation_turns(self._engine, self._conversation_id) if self._conversation_id else 0
+        user_prompt = format_text_prompt(question, context, turns_used)
+        response    = self._llm.chat(self._chitchat_system_prompt, user_prompt)
+
+        elapsed = (time.perf_counter() - t0) * 1000
+        print(f"analyse_text latency: {elapsed:.0f} ms")
+        # No lms_references surfaced: retrieval here is opportunistic and the
+        # model is told to cite only when directly relevant. Returning the
+        # full doc list would put unrelated curriculum links under a casual
+        # "hello" exchange.
+        return {"response": response, "lms_references": []}
 
     def analyse_image(self, image_bytes: bytes, question: str = "") -> dict:
         limit = self._check_turn_limit()
