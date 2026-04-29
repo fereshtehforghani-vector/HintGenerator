@@ -293,12 +293,20 @@ you're logged in (`gcloud auth login`). The gcloud lookup uses
 
 To run it, set the deployed URL in your environment and launch:
 
+```python
+cd zebra-hint-generator
+python test_frontend.py
+# opens http://127.0.0.1:7860
+```
+
+Or, in test_frontend.py, comment out the hardcoded URL and uncomment the os.environ line (QUERY_RAG_URL = "[URL link]", QUERY_RAG_URL = os.environ.get("QUERY_RAG_URL")) , then run:
+
 ```bash
 cd zebra-hint-generator
 export QUERY_RAG_URL=$(gcloud run services describe query-rag \
         --region=us-central1 --project=zebra-ai-assist-poc \
         --format="value(status.url)")
-python3 test_frontend.py
+python test_frontend.py
 # opens http://127.0.0.1:7860
 ```
 
