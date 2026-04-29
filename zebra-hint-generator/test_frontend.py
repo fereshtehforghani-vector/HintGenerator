@@ -11,8 +11,9 @@ from sqlalchemy import text
 
 from shared.config import get_db_engine, get_secret
 
-
-QUERY_RAG_URL = os.environ.get("QUERY_RAG_URL")
+# If running from test_frontend.sh, comment the following line and uncomment the one after that
+QUERY_RAG_URL = "https://query-rag-773402166266.us-central1.run.app"
+# QUERY_RAG_URL = os.environ.get("QUERY_RAG_URL")
 if not QUERY_RAG_URL:
     sys.exit("QUERY_RAG_URL is not set. Run via test_frontend.sh, or export "
              "QUERY_RAG_URL=https://<your-cloud-run-host> before running.")
@@ -60,9 +61,13 @@ def _viewable_video_url(url: str) -> str:
 
 # TODO: Change my authentication token - ideally the user should be able to be authenticated from the front-end in their own way
 def get_auth_token():
-    return subprocess.check_output(
-        ["gcloud", "auth", "print-identity-token"], text=True
-    ).strip()
+    result = subprocess.run(
+        ["gcloud", "auth", "print-identity-token"],
+        text=True,
+        capture_output=True,
+        shell=True 
+    )
+    return result.stdout.strip()
 
 # Once the user submits a message to the Gradio chatbot, this function is called. It takes in the user's message (which includes the query text and optionally a file), the pasted code (cpp-track only), and the current chat display.
 def handle_request(message: dict, pasted_code: str, chat_display: list, conversation_id: str, student_id: int):
