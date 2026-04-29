@@ -7,6 +7,7 @@ import re
 import sys
 import uuid
 import json
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
 from sqlalchemy import text
 
@@ -49,6 +50,7 @@ if not STUDENT_CHOICES:
 
 
 _VIMEO_PLAYER_RE = re.compile(r"https?://player\.vimeo\.com/video/(\d+)")
+_CITATION_RE = re.compile(r"\[(\d+)\]")
 
 
 def _viewable_video_url(url: str) -> str:
@@ -59,6 +61,36 @@ def _viewable_video_url(url: str) -> str:
     if m:
         return f"https://vimeo.com/{m.group(1)}"
     return url
+
+
+def _with_authuser(url: str) -> str:
+    """Append ?authuser=1 to storage.cloud.google.com URLs so teammates whose
+    work account is the second Google account in their browser don't 403.
+    Non-GCS URLs (e.g. Vimeo) pass through unchanged."""
+    if not url:
+        return url
+    parts = urlparse(url)
+    if parts.netloc != "storage.cloud.google.com":
+        return url
+    q = dict(parse_qsl(parts.query, keep_blank_values=True))
+    q["authuser"] = "1"
+    return urlunparse(parts._replace(query=urlencode(q)))
+
+
+def _linkify_citations(text: str, refs: list[dict]) -> str:
+    """Turn inline [N] citations into clickable markdown links pointing at the
+    matching reference's source URL. [LN] library citations are left alone —
+    only curriculum refs carry URLs."""
+    ref_to_url = {r["ref"]: _with_authuser(r.get("source")) for r in refs if r.get("source")}
+    if not ref_to_url:
+        return text
+
+    def repl(m: re.Match) -> str:
+        n = int(m.group(1))
+        url = ref_to_url.get(n)
+        return f"[\\[{n}\\]]({url})" if url else m.group(0)
+
+    return _CITATION_RE.sub(repl, text)
 
 # TODO: Change my authentication token - ideally the user should be able to be authenticated from the front-end in their own way
 def get_auth_token():
@@ -144,10 +176,11 @@ def handle_request(message: dict, pasted_code: str, chat_display: list, conversa
         except Exception:
             refs = []
         if refs:
+            linked = _linkify_citations(accumulated, refs)
             lines = ["\n\n---\n**References**"]
             for r in refs:
                 title = r.get("title") or r.get("source", "reference")
-                src   = r.get("source", "")
+                src   = _with_authuser(r.get("source", ""))
                 meta  = []
                 if r.get("course"):
                     meta.append(r["course"])
@@ -158,7 +191,7 @@ def handle_request(message: dict, pasted_code: str, chat_display: list, conversa
                 for i, vid in enumerate(r.get("video_urls") or [], 1):
                     viewable = _viewable_video_url(vid)
                     lines.append(f"    - 🎥 [Video {i}]({viewable})")
-            chat_display[-1] = {"role": "assistant", "content": accumulated + "\n".join(lines)}
+            chat_display[-1] = {"role": "assistant", "content": linked + "\n".join(lines)}
             yield {"text": "", "files": []}, "", chat_display, chat_display, conversation_id, student_id
 
     except Exception as e:
