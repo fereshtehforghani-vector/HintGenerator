@@ -34,6 +34,7 @@ import sys
 import traceback
 
 from flask import Flask, request, Response, stream_with_context
+from sqlalchemy import text
 
 sys.path.insert(0, ".")
 
@@ -107,17 +108,30 @@ def query_rag():
         if file_type == "cpp":
             code = file_data
 
-        # Allow pure text queries with no code — just need a question
-        if file_type != "image" and not code and not question:
+        engine, vs = _warm()
+
+        with engine.connect() as conn:
+            row = conn.execute(
+                text("SELECT track FROM students WHERE student_id = :sid"),
+                {"sid": student_id},
+            ).fetchone()
+        track = ((row[0] if row else None) or "cpp").lower()
+
+        if track == "cpp" and not code:
             return (
-                json.dumps({"error": "Provide a question, code, or an uploaded file."}),
+                "Please paste your C++ code or attach a .cpp file.",
                 400,
-                {**cors_headers, "Content-Type": "application/json"},
+                {**cors_headers, "Content-Type": "text/plain"},
+            )
+        if track == "scratch" and file_type != "image":
+            return (
+                "Please attach your image file.",
+                400,
+                {**cors_headers, "Content-Type": "text/plain"},
             )
 
-        engine, vs = _warm()
         retriever  = get_retriever(vs, top_k=10, course_id=course_id)
-        tutor = AgenticTutor(engine=engine, student_id=student_id, provider=provider, retriever=retriever, enable_security=True)
+        tutor = AgenticTutor(engine=engine, student_id=student_id, conversation_id=conv_id, provider=provider, retriever=retriever, enable_security=True)
 
         if file_type == "image":
             result     = tutor.analyse_image(file_data, question)  # file_data is bytes

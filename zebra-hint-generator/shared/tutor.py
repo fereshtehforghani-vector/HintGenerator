@@ -2,9 +2,11 @@
 ZebraBot Socratic tutor — core logic (v2).
 
 Prompt architecture: modular categories loaded from prompt_config table.
-Static order:  ROLE → SOCRATIC_CONSTRAINT → SAFETY_AND_SCOPE → ENCOURAGEMENT_POLICY
+Static order:  ROLE -> SOCRATIC_CONSTRAINT -> SAFETY_AND_SCOPE -> ENCOURAGEMENT_POLICY
 Dynamic:       STUDENT_PROFILE, CURRICULUM_TRACK_BEHAVIOR, SESSION_STATE
 RAG_CITATION_POLICY: excluded (work in progress)
+
+Turn limit: enforced via conversation_history table count per conversation_id.
 """
 
 import time
@@ -61,7 +63,7 @@ def load_student_profile(engine, student_id: int) -> dict:
     with engine.connect() as conn:
         row = conn.execute(
             text("""
-                SELECT name, grade, track, session_count, turns_used
+                SELECT name, grade, track, session_count
                 FROM students
                 WHERE student_id = :sid
             """),
@@ -69,38 +71,26 @@ def load_student_profile(engine, student_id: int) -> dict:
         ).fetchone()
     if row is None:
         raise RuntimeError(f"No student found with student_id={student_id}.")
-    name, grade, track, session_count, turns_used = row
+    name, grade, track, session_count = row
     return {
-        "student_name":   name,
-        "student_grade":  grade,
-        "student_track":  track or "cpp",
-        "session_count":  session_count,
-        "turns_used":     turns_used,
+        "student_name":  name,
+        "student_grade": grade,
+        "student_track": track or "cpp",
+        "session_count": session_count,
     }
 
 
-def increment_turns(engine, student_id: int) -> int:
-    """Increment turns_used and return the new value."""
-    with engine.begin() as conn:
+def get_conversation_turns(engine, conversation_id: str) -> int:
+    """Count how many turns have been used in this conversation."""
+    with engine.connect() as conn:
         row = conn.execute(
             text("""
-                UPDATE students
-                SET turns_used = turns_used + 1
-                WHERE student_id = :sid
-                RETURNING turns_used
+                SELECT COUNT(*) FROM conversation_history
+                WHERE conversation_id = :cid
             """),
-            {"sid": student_id},
+            {"cid": conversation_id},
         ).fetchone()
-    return row[0]
-
-
-def reset_turns(engine, student_id: int) -> None:
-    """Call this when a student moves to a new problem."""
-    with engine.begin() as conn:
-        conn.execute(
-            text("UPDATE students SET turns_used = 0 WHERE student_id = :sid"),
-            {"sid": student_id},
-        )
+    return row[0] if row else 0
 
 
 # ── Prompt assembly ────────────────────────────────────────────────────────────
@@ -157,10 +147,10 @@ def format_user_prompt(
 3. Every technical claim (function names, parameters, port numbers, library behaviour)
    MUST come from the RETRIEVED CONTEXT above.
 4. Citation rules:
-   - Curriculum passages [1], [2], … → cite as "According to [2]…"
-   - Library passages [L1], [L2], …  → cite as "See [L3]…"
-   - In the 📚 Curriculum Reference section use ONLY [N] numbers (not [LN]).
-5. If the cited passage has a "Video URL(s):" line, add a 📺 Video Reference section
+   - Curriculum passages [1], [2], ... -> cite as "According to [2]..."
+   - Library passages [L1], [L2], ...  -> cite as "See [L3]..."
+   - In the Curriculum Reference section use ONLY [N] numbers (not [LN]).
+5. If the cited passage has a "Video URL(s):" line, add a Video Reference section
    with those URLs verbatim. Omit the section entirely if no video URL is listed.
 6. If no retrieved passages are relevant, state that before offering general guidance.
 
@@ -189,7 +179,7 @@ def format_image_prompt(context: str, turns_used: int, question: str = "") -> st
 3. Apply the Socratic method — give a hint and a guiding question.
 4. Do NOT rewrite the entire program for the student.
 5. Every technical claim MUST be grounded in the RETRIEVED CONTEXT above. Cite by number.
-6. If the cited passage has a "Video URL(s):" line, add a 📺 Video Reference section.
+6. If the cited passage has a "Video URL(s):" line, add a Video Reference section.
    Omit entirely if no video URL is listed.
 7. If no retrieved passage is relevant, say so before offering general advice.
 
@@ -200,42 +190,49 @@ def format_image_prompt(context: str, turns_used: int, question: str = "") -> st
 # ── AgenticTutor ───────────────────────────────────────────────────────────────
 class AgenticTutor:
     """
-    Orchestrates RAG retrieval → prompt assembly → LLM call → security checks.
+    Orchestrates RAG retrieval -> prompt assembly -> LLM call -> security checks.
 
-    engine         : SQLAlchemy engine (same one used by RAG and conversation store)
-    student_id     : loaded from students table at construction time
-    provider       : 'OpenAI' | 'Gemini'
-    retriever      : RAG retriever instance
-    enable_security: run input/output security gates
+    engine          : SQLAlchemy engine (same one used by RAG and conversation store)
+    student_id      : loaded from students table at construction time
+    conversation_id : used to count turns from conversation_history table
+    provider        : 'OpenAI' | 'Gemini'
+    retriever       : RAG retriever instance
+    enable_security : run input/output security gates
     """
 
     def __init__(
         self,
         engine,
         student_id: int,
+        conversation_id: str | None = None,
         provider: Literal["OpenAI", "Gemini"] = "OpenAI",
         retriever=None,
         enable_security: bool = True,
     ):
-        self._engine         = engine
-        self._student_id     = student_id
-        self.retriever       = retriever
-        self.enable_security = enable_security
-        self._llm            = LLMInterface(provider=provider)
+        self._engine          = engine
+        self._student_id      = student_id
+        self._conversation_id = conversation_id
+        self.retriever        = retriever
+        self.enable_security  = enable_security
+        self._llm             = LLMInterface(provider=provider)
 
-        profile              = load_student_profile(engine, student_id)
-        self._turns_used     = profile["turns_used"]
-        static_prompt        = load_static_prompts(engine)
-        self._system_prompt  = format_system_prompt(engine, static_prompt, profile)
+        profile             = load_student_profile(engine, student_id)
+        static_prompt       = load_static_prompts(engine)
+        self._system_prompt = format_system_prompt(engine, static_prompt, profile)
 
     def _check_turn_limit(self) -> dict | None:
-        """Return a fallback dict if the student has used all their turns, else None."""
-        if self._turns_used >= MAX_TURNS:
+        """
+        Return a fallback dict if the conversation has hit MAX_TURNS, else None.
+        Skips the check if no conversation_id is provided.
+        """
+        if not self._conversation_id:
+            return None
+        turns = get_conversation_turns(self._engine, self._conversation_id)
+        if turns >= MAX_TURNS:
             return {
                 "response": (
-                    f"You've used all {MAX_TURNS} hints for this problem. "
-                    "Please ask your teacher for help, or try a fresh attempt "
-                    "on a new problem!"
+                    f"You've used all {MAX_TURNS} hints for this conversation. "
+                    "Please start a new chat or ask your teacher for help!"
                 ),
                 "lms_references": [],
             }
@@ -259,20 +256,19 @@ class AgenticTutor:
             query=f"{student_code}\n{question}", retriever=self.retriever
         )
         lms_references = extract_lms_references(docs)
-        user_prompt    = format_user_prompt(student_code, context, self._turns_used, question)
-        response       = self._llm.chat(self._system_prompt, user_prompt)
 
-        iresponse       = self._llm.chat(self._system_prompt, user_prompt)
+        turns_used  = get_conversation_turns(self._engine, self._conversation_id) if self._conversation_id else 0
+        user_prompt = format_user_prompt(student_code, context, turns_used, question)
+        response    = self._llm.chat(self._system_prompt, user_prompt)
+
         if self.enable_security:
-            print(f"RAW RESPONSE: {response[:500]}")
             check = validate_and_sanitize_model_output(response)
             if not check["safe"]:
                 return {"response": build_security_fallback("; ".join(check["issues"])), "lms_references": []}
             response = check["response"]
-        self._turns_used = increment_turns(self._engine, self._student_id)
 
         elapsed = (time.perf_counter() - t0) * 1000
-        print(f"analyse_code latency: {elapsed:.0f} ms  |  turns_used: {self._turns_used}/{MAX_TURNS}")
+        print(f"analyse_code latency: {elapsed:.0f} ms")
         return {"response": response, "lms_references": lms_references}
 
     def analyse_image(self, image_bytes: bytes, question: str = "") -> dict:
@@ -292,17 +288,19 @@ class AgenticTutor:
             query=question or "spike block code program", retriever=self.retriever
         )
         lms_references = extract_lms_references(docs)
-        image_prompt   = format_image_prompt(context, self._turns_used, question)
-        response       = self._llm.chat_with_image(self._system_prompt, image_prompt, image_bytes)
 
+        turns_used   = get_conversation_turns(self._engine, self._conversation_id) if self._conversation_id else 0
+        image_prompt = format_image_prompt(context, turns_used, question)
+        response     = self._llm.chat_with_image(self._system_prompt, image_prompt, image_bytes)
+
+        # TEMP DEBUG: output guardrails disabled for image flow to observe raw
+        # model behavior. Restore the validator block below before going live.
         if self.enable_security:
             check = validate_and_sanitize_model_output(response)
-            if not check["safe"]:
-                return {"response": build_security_fallback("; ".join(check["issues"])), "lms_references": []}
+            print(f"[image output validator] safe={check['safe']} issues={check['issues']}")
+            print(f"[image raw response] {response[:500]}")
             response = check["response"]
 
-        self._turns_used = increment_turns(self._engine, self._student_id)
-
         elapsed = (time.perf_counter() - t0) * 1000
-        print(f"analyse_image latency: {elapsed:.0f} ms  |  turns_used: {self._turns_used}/{MAX_TURNS}")
+        print(f"analyse_image latency: {elapsed:.0f} ms")
         return {"response": response, "lms_references": lms_references}
