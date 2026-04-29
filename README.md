@@ -90,7 +90,7 @@ zebra-hint-generator/
 ├── demo_lms_upload.py         # Demo — verify Eventarc auto-rebuild on LMS upload
 ├── demo_show_db.py            # Demo helper — print pgvector collection stats
 ├── test_frontend.py           # Developer tool — Gradio chat UI for the deployed query-rag
-└── test_frontend.sh           # Convenience wrapper that exports QUERY_RAG_URL and launches test_frontend.py
+└── test_frontend.sh           # Convenience wrapper — `cd`s into the service dir and runs `python test_frontend.py`
 ```
 
 `AI Pilot/` (sibling of `zebra-hint-generator/`) holds source material the
@@ -302,8 +302,8 @@ python3 test_frontend.py
 # opens http://127.0.0.1:7860
 ```
 
-Or just use the wrapper, which exports `QUERY_RAG_URL` for you and launches
-the script:
+Or just use the wrapper, which `cd`s into the service directory and runs
+`python test_frontend.py`:
 
 ```bash
 cd zebra-hint-generator
@@ -387,9 +387,6 @@ SELECT cmetadata->>'type', count(*)
 
 ## Editing & gotchas
 
-- **Changing the system prompt's section headers** (`🔍 **Mistake Type**`, etc.)
-  requires updating `validate_and_sanitize_model_output` in
-  `shared/security.py` — the validator checks for these literal substrings.
 - **Reordering retrieval docs** in `build_rag_context`, or skipping the
   curriculum-first dedup, will silently desync `lms_references[].ref` from
   the `[N]` citations the LLM produces.
