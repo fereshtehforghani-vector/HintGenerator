@@ -70,7 +70,14 @@ def build_rag_database():
     # fires on every change in the bucket. Skip rebuilds for objects outside
     # LMS/LMS_PARSED/ to avoid burning Gemini quota on irrelevant changes.
     # Manual / dry-run requests have no `bucket` attribute and pass through.
-    event_bucket = request.headers.get("ce-bucket") or request.headers.get("Ce-Bucket")
+    # Native Eventarc sets `ce-bucket`; Pub/Sub-based GCS_NOTIFICATION mode
+    # only encodes the bucket inside `ce-source` (.../buckets/<bucket>), so
+    # fall back to parsing it from there.
+    event_bucket = request.headers.get("ce-bucket")
+    if not event_bucket:
+        ce_source = request.headers.get("ce-source", "")
+        if "/buckets/" in ce_source:
+            event_bucket = ce_source.rsplit("/buckets/", 1)[-1].split("/", 1)[0]
     event_object = request.headers.get("ce-subject", "").removeprefix("objects/")
     if event_bucket and not event_object.startswith("LMS/LMS_PARSED/"):
         msg = f"Skipping: event for {event_bucket}/{event_object} is outside LMS/LMS_PARSED/"
