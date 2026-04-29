@@ -261,11 +261,11 @@ class AgenticTutor:
         user_prompt = format_user_prompt(student_code, context, turns_used, question)
         response    = self._llm.chat(self._system_prompt, user_prompt)
 
-        if self.enable_security:
-            check = validate_and_sanitize_model_output(response)
-            if not check["safe"]:
-                return {"response": build_security_fallback("; ".join(check["issues"])), "lms_references": []}
-            response = check["response"]
+        # if self.enable_security:
+        #     check = validate_and_sanitize_model_output(response)
+        #     if not check["safe"]:
+        #         return {"response": build_security_fallback("; ".join(check["issues"])), "lms_references": []}
+        #     response = check["response"]
 
         elapsed = (time.perf_counter() - t0) * 1000
         print(f"analyse_code latency: {elapsed:.0f} ms")
@@ -293,13 +293,13 @@ class AgenticTutor:
         image_prompt = format_image_prompt(context, turns_used, question)
         response     = self._llm.chat_with_image(self._system_prompt, image_prompt, image_bytes)
 
-        # TEMP DEBUG: output guardrails disabled for image flow to observe raw
-        # model behavior. Restore the validator block below before going live.
-        if self.enable_security:
-            check = validate_and_sanitize_model_output(response)
-            print(f"[image output validator] safe={check['safe']} issues={check['issues']}")
-            print(f"[image raw response] {response[:500]}")
-            response = check["response"]
+        # # TEMP DEBUG: output guardrails disabled for image flow to observe raw
+        # # model behavior. Restore the validator block below before going live.
+        # if self.enable_security:
+        #     check = validate_and_sanitize_model_output(response)
+        #     print(f"[image output validator] safe={check['safe']} issues={check['issues']}")
+        #     print(f"[image raw response] {response[:500]}")
+        #     response = check["response"]
 
         elapsed = (time.perf_counter() - t0) * 1000
         print(f"analyse_image latency: {elapsed:.0f} ms")

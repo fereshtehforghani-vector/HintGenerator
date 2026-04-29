@@ -18,16 +18,18 @@ if not QUERY_RAG_URL:
              "QUERY_RAG_URL=https://<your-cloud-run-host> before running.")
 
 
-def fetch_students() -> list[tuple[str, int]]:
+def fetch_students() -> tuple[list[tuple[str, int]], dict[int, str]]:
     """Pull (label, student_id) pairs from the Cloud SQL `students` table so the
-    dropdown reflects whoever is actually seeded. Requires gcloud auth with
+    dropdown reflects whoever is actually seeded. Also returns a {student_id:
+    track} map used to toggle the C++ paste box. Requires gcloud auth with
     Secret Manager + Cloud SQL access."""
     engine = get_db_engine(get_secret("conversation_history_DB-PASSWORD"))
     with engine.connect() as conn:
         rows = conn.execute(
             text("SELECT student_id, name, grade, track FROM students ORDER BY student_id")
         ).fetchall()
-    choices = []
+    choices: list[tuple[str, int]] = []
+    tracks: dict[int, str] = {}
     for sid, name, grade, track in rows:
         bits = [str(name or f"student {sid}")]
         if grade:
@@ -35,10 +37,11 @@ def fetch_students() -> list[tuple[str, int]]:
         if track:
             bits.append(track)
         choices.append((f"{' • '.join(bits)} (id={sid})", sid))
-    return choices
+        tracks[sid] = (track or "").lower()
+    return choices, tracks
 
 
-STUDENT_CHOICES = fetch_students()
+STUDENT_CHOICES, STUDENT_TRACKS = fetch_students()
 if not STUDENT_CHOICES:
     sys.exit("No rows found in `students` table — seed it before running the demo.")
 
@@ -61,11 +64,12 @@ def get_auth_token():
         ["gcloud", "auth", "print-identity-token"], text=True
     ).strip()
 
-# Once the user submits a message to the Gradio chatbot, this function is called. It takes in the user's message (which includes the query text and optionally a file) and the current chat display (which is a list of all previous messages in the conversation).
-def handle_request(message: dict, chat_display: list, conversation_id: str, student_id: int):
+# Once the user submits a message to the Gradio chatbot, this function is called. It takes in the user's message (which includes the query text and optionally a file), the pasted code (cpp-track only), and the current chat display.
+def handle_request(message: dict, pasted_code: str, chat_display: list, conversation_id: str, student_id: int):
     try:
         query = message["text"]
         file = message["files"][0] if message["files"] else None
+        pasted_code = (pasted_code or "").strip()
 
         # Get auth token and send request to Cloud Function, along with the user's query, file type, and file data (if they exist)
         token = get_auth_token()
@@ -75,6 +79,11 @@ def handle_request(message: dict, chat_display: list, conversation_id: str, stud
             "conversation_id": conversation_id,
             "student_id": student_id,
         }
+        # Only include `code` when the student actually pasted something. A
+        # .cpp file upload (handled below) takes priority server-side at
+        # query_rag/main.py:108, so sending both is harmless but the file wins.
+        if pasted_code:
+            data["code"] = pasted_code
 
         # If the user attached a file, include it in the request to the Cloud Function.
         if file:
@@ -95,9 +104,11 @@ def handle_request(message: dict, chat_display: list, conversation_id: str, stud
                 stream=True,
             )
 
-        # add user message to chat display immediately — show the file too if attached
+        # add user message to chat display immediately — show the file/code too if present
         if file:
             chat_display.append({"role": "user", "content": {"path": file}})
+        if pasted_code:
+            chat_display.append({"role": "user", "content": f"```cpp\n{pasted_code}\n```"})
         if query:
             chat_display.append({"role": "user", "content": query})
         chat_display.append({"role": "assistant", "content": ""})  # placeholder for streaming response
@@ -110,7 +121,7 @@ def handle_request(message: dict, chat_display: list, conversation_id: str, stud
                 print(chunk, end="", flush=True)  # print each chunk to terminal as it arrives
                 accumulated += chunk  # build up the full response
                 chat_display[-1] = {"role": "assistant", "content": accumulated}  # update last message with new chunk
-                yield {"text": "", "files": []}, chat_display, chat_display, conversation_id, student_id  # yield updated display to Gradio
+                yield {"text": "", "files": []}, "", chat_display, chat_display, conversation_id, student_id  # yield updated display to Gradio
         print()  # print newline after full response is done
 
         # Append curriculum references parsed from the X-LMS-References header.
@@ -134,12 +145,12 @@ def handle_request(message: dict, chat_display: list, conversation_id: str, stud
                     viewable = _viewable_video_url(vid)
                     lines.append(f"    - 🎥 [Video {i}]({viewable})")
             chat_display[-1] = {"role": "assistant", "content": accumulated + "\n".join(lines)}
-            yield {"text": "", "files": []}, chat_display, chat_display, conversation_id, student_id
+            yield {"text": "", "files": []}, "", chat_display, chat_display, conversation_id, student_id
 
     except Exception as e:
         chat_display.append({"role": "user", "content": message["text"]})
         chat_display.append({"role": "assistant", "content": f"Error: {str(e)}"})
-        yield chat_display, chat_display, conversation_id, student_id  # yield instead of return for consistency
+        yield {"text": "", "files": []}, "", chat_display, chat_display, conversation_id, student_id
 
 
 # Use Gradio for the demo as the front end - TODO: change later
@@ -167,6 +178,15 @@ with gr.Blocks(css=CHATBOT_CSS) as demo:
 
     chatbot = gr.Chatbot(height=500, show_label=False, elem_id="tutor-chatbot")
 
+    # C++ paste box — only visible for cpp-track students. Initial visibility
+    # is set on demo.load below so it matches the default-selected student.
+    code_box = gr.Code(
+        language="cpp",
+        label="Paste your C++ code (optional)",
+        visible=False,
+        lines=10,
+    )
+
     chat_input = gr.MultimodalTextbox(
         placeholder="Describe your problem and optionally attach a screenshot or .cpp file...",
         file_types=[".png", ".jpg", ".jpeg", ".webp", ".cpp"],
@@ -175,16 +195,33 @@ with gr.Blocks(css=CHATBOT_CSS) as demo:
 
     # Fresh conversation_id per browser session (each new tab). The selected
     # student_id comes from the dropdown above, populated from the `students`
-    # table at startup.
+    # table at startup. Initial code-box visibility tracks that student.
+    def _on_load():
+        default_sid = STUDENT_CHOICES[0][1]
+        is_cpp = STUDENT_TRACKS.get(default_sid) == "cpp"
+        return str(uuid.uuid4()), gr.update(visible=is_cpp, value="")
+
     demo.load(
-        fn=lambda: str(uuid.uuid4()),
-        outputs=[conversation_id],
+        fn=_on_load,
+        outputs=[conversation_id, code_box],
+    )
+
+    # Toggle the code box when the active student changes. Clear the value on
+    # switch so one student's paste doesn't leak into another's session.
+    def _toggle_code_box(sid):
+        is_cpp = STUDENT_TRACKS.get(sid) == "cpp"
+        return gr.update(visible=is_cpp, value="")
+
+    student_id.change(
+        fn=_toggle_code_box,
+        inputs=[student_id],
+        outputs=[code_box],
     )
 
     chat_input.submit(
         fn=handle_request,
-        inputs=[chat_input, chat_display, conversation_id, student_id],
-        outputs=[chat_input, chatbot, chat_display, conversation_id, student_id]
+        inputs=[chat_input, code_box, chat_display, conversation_id, student_id],
+        outputs=[chat_input, code_box, chatbot, chat_display, conversation_id, student_id]
     )
 
 if __name__ == "__main__":
