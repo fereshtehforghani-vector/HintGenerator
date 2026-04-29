@@ -81,7 +81,8 @@ deploy_build_rag() {
     --memory=4Gi \
     --cpu=2 \
     --timeout=3600 \
-    --max-instances=1
+    --max-instances=1 \
+    --concurrency=1
   green "build-rag-database deployed."
 }
 
